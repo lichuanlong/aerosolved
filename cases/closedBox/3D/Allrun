@@ -1,0 +1,59 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../../scripts/AeroSolvedRunFunctions
+
+checkPython3
+
+# Mesh properties
+
+W=0.14      # Width of the domain
+L=0.10      # Length of the domain
+H=0.16      # Height of the domain
+D=0.02      # Width of the inlet
+NW=40       # Number of cells over the width of the domain
+
+# Compute mesh variables
+
+MATH="import math as m"
+
+R=$(echo "$MATH; print($D/2.0)" | python3)
+
+DW=$(echo "$MATH; print($W/$NW)" | python3)
+
+NL=$(echo "$MATH; print(int(round($L/$DW)))" | python3)
+NH=$(echo "$MATH; print(int(round($H/$DW*2.0)))" | python3)
+
+WH=$(echo "$MATH; print($W/2.0)" | python3)
+LH=$(echo "$MATH; print($L/2.0)" | python3)
+
+P1=$(echo "$MATH; print($H-1e-4)" | python3)
+P2=$(echo "$MATH; print($H+1e-4)" | python3)
+
+VARS="\
+    -DVARH=$H \
+    -DVARWH=$WH \
+    -DVARLH=$LH \
+    -DVARNW=$NW \
+    -DVARNL=$NL \
+    -DVARNH=$NH \
+    -DVARR=$R \
+    -DVARP1=$P1 \
+    -DVARP2=$P2 \
+    "
+
+setMacros "$VARS"
+
+cp -r 0.org 0
+
+runApplication blockMesh
+
+runApplication topoSet
+
+runApplication createPatch -overwrite
+
+runApplication decomposePar
+
+runParallel $(getApplication)

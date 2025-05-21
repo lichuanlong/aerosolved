@@ -36,6 +36,7 @@ tension) into the phase-specific thermo object.
 #include "rhoReactionThermo.H"
 #include "aerosolPropertyReader.H"
 #include "speciesTable.H"
+#include "componentMixing.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,6 +53,14 @@ class rhoAerosolPhaseThermo
     public rhoReactionThermo,
     public aerosolPropertyReader
 {
+
+    //- Private member data
+
+        //- Reference to the mesh object
+        const fvMesh& mesh_;
+
+        //- Component mixing object
+        autoPtr<componentMixing> compMix_;
 
 public:
 
@@ -91,10 +100,13 @@ public:
 
 
     //- Destructor
-    virtual ~rhoAerosolPhaseThermo() = default;
+    virtual ~rhoAerosolPhaseThermo();
 
 
     //- Member functions
+
+        //- Correct the component mixing of this phase
+        virtual void correctMixing();
 
         inline const speciesTable& species() const
         {
@@ -113,10 +125,35 @@ public:
         virtual tmp<scalarField> WMix(const label patchi) const = 0;
 
         //- Density [kg/m3]
-        using rhoReactionThermo::rho;
+        virtual tmp<volScalarField> rho() const;
+
+        //- Non-const density [kg/m3]
+        virtual volScalarField& rho();
 
         //- Extend rhoThermo with a Cell-based density [kg/m3]
         virtual tmp<scalarField> rho(const labelList& cells) const;
+
+        //- Patch-based density [kg/m3]
+        virtual tmp<scalarField> rho(const label patchi) const;
+
+        //- Return the mesh object
+        inline const fvMesh& mesh() const
+        {
+            return mesh_;
+        }
+
+        //- Return the phase name
+        inline const word& phaseName() const
+        {
+            return basicThermo::phaseName_;
+        }
+
+        //- Return the component mixing object
+        componentMixing& compMix()
+        {
+            return compMix_();
+        }
+
 };
 
 

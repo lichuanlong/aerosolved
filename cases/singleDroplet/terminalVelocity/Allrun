@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../../scripts/AeroSolvedRunFunctions
+
+checkPython3
+
+rm -f 0; cp -r 0.org 0
+
+runApplication blockMesh
+
+runApplication $(getApplication)
+
+runApplication python3 plot.py

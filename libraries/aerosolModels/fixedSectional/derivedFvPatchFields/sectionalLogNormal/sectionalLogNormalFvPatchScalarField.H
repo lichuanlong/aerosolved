@@ -63,7 +63,7 @@ class sectionalLogNormalFvPatchScalarField
         label sectionIndex() const;
 
         //- Log normal distribution integral
-        scalarField logNormalIntegral
+        tmp<scalarField> logNormalIntegral
         (
             const scalar& xl,
             const scalar& xu,

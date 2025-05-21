@@ -1,0 +1,84 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.continuous;
+}
+
+thermoType
+{
+    type            heAerosolRhoThermo;
+    mixture         aerosolPhase;
+    transport       polynomial;
+    thermo          hPolynomial;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
+}
+
+componentMixing
+{
+    viscosity       WilkeWassiljewa;
+    conductivity    WilkeWassiljewa;
+}
+
+species
+{
+    Helium
+    {
+        specie
+        {
+            molWeight       4.0026;
+        }
+        thermodynamics
+        {
+            Hf              0;
+            Sf              0;
+            CpCoeffs<8>     (5200 0 0 0 0 0 0 0);
+        }
+        transport
+        {
+            muCoeffs<8>     (2.23761923e-06  7.14519824e-08 -4.34153417e-11 0 0 0 0 0);
+            kappaCoeffs<8>  (-24.5095e-03 1.1246e-03 -2.9312e-06 4.4965e-09 -2.5195e-12 0 0 0);
+        }
+        diffusivities
+        {
+            Helium          FullerSchettlerGiddings;
+            Butanol         FullerSchettlerGiddings;
+        }
+        properties
+        {
+            Vd              constant 2.67;
+        }
+    }
+
+    Butanol
+    {
+        specie
+        {
+            molWeight       74.123;
+        }
+        thermodynamics
+        {
+            Hf              0;
+            Sf              0;
+            CpCoeffs<8>     (44.06189 5.639275 -3.024702e-3 6.320575e-7 0 0 0 0);
+        }
+        transport
+        {
+            muCoeffs<8>     (-18.43e-7 0.2867e-7 -10.48e-13 0 0 0 0 0);
+            kappaCoeffs<8>  (-7.772e-3 3.564e-5 1.206e-7 -4.992e-11 0 0 0 0);
+        }
+        diffusivities
+        {
+            Butanol         FullerSchettlerGiddings;
+        }
+        properties
+        {
+            pSat            NSRDS1 (98.494 -9412.6064 -10.54 0 1);
+            Vd              constant 92.81;
+        }
+    }
+}

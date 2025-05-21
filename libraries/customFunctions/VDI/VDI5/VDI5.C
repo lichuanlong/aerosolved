@@ -27,10 +27,11 @@ template<class Type>
 Foam::Function1Types::VDI5<Type>::VDI5
 (
     const word& entryName,
-    const dictionary& dict
+    const dictionary& dict,
+    const objectRegistry* obrPtr
 )
 :
-    Function1<Type>(entryName)
+    Function1<Type>(entryName, dict, obrPtr)
 {
     Istream& is(dict.lookup(entryName));
     word entryType(is);

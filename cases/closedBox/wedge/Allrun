@@ -1,0 +1,65 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../../scripts/AeroSolvedRunFunctions
+
+checkPython3
+
+# Mesh properties
+
+R=0.0675    # Radius of the domain
+H=0.135     # Height of the domain
+RI=0.01     # Radius of the inlet
+NRI=8       # Number of cells at one inlet radius
+GR=2        # Radial grading factor
+GY=2        # Vertical grading factor
+ALPHA=5     # Wedge angle
+
+# Compute mesh variables
+
+MATH="import math as m"
+
+GRi=$(echo "$MATH; print(1.0/$GR)" | python3)
+GYi=$(echo "$MATH; print(1.0/$GY)" | python3)
+
+DRI=$(echo "$MATH; print($RI/$NRI)" | python3)
+
+RRI=$(echo "$MATH; print($R-$RI)" | python3)
+QX=$(echo "$MATH; print(($RRI-$GR*$DRI)/($RRI-$DRI))" | python3)
+NRRI=$(echo "$MATH; print( int(round(m.log($GRi)/m.log($QX)+1)) )" | python3)
+
+QY=$(echo "$MATH; print(($H-$DRI)/($H-$GY*$DRI))" | python3)
+NY=$(echo "$MATH; print( int(round(m.log($GY)/m.log($QY)+1)) )" | python3)
+
+RX=$(echo "$MATH; print(m.cos($ALPHA/2.0/180.0*m.pi)*$R)" | python3)
+RY=$(echo "$MATH; print(m.sin($ALPHA/2.0/180.0*m.pi)*$R)" | python3)
+
+RIX=$(echo "$MATH; print(m.cos($ALPHA/2.0/180.0*m.pi)*$RI)" | python3)
+RIY=$(echo "$MATH; print(m.sin($ALPHA/2.0/180.0*m.pi)*$RI)" | python3)
+
+VARS="\
+    -DVARH=$H \
+    -DVARRIX=$RIX \
+    -DVARRIY=$RIY \
+    -DVARRX=$RX \
+    -DVARRY=$RY \
+    -DVARNY=$NY \
+    -DVARNRI=$NRI \
+    -DVARNRRI=$NRRI \
+    -DVARGR=$GR \
+    -DVARGRi=$GRi \
+    -DVARGY=$GY \
+    -DVARGYi=$GYi \
+    "
+
+setMacros "$VARS"
+
+cp -r 0.org 0
+
+runApplication blockMesh
+
+runApplication decomposePar
+
+runParallel $(getApplication)

@@ -64,17 +64,20 @@ public:
         VDI6
         (
             const word& entryName,
-            const dictionary& dict
+            const dictionary& dict,
+            const objectRegistry* obrPtr = nullptr
         );
 
         //- Copy constructor
         VDI6(const VDI6<Type>& se);
 
+#ifndef AEROSOLVED_NO_CLONE_IN_FUNCTION1
         //- Construct and return a clone
         virtual tmp<Function1<Type>> clone() const
         {
             return tmp<Function1<Type>>(new VDI6<Type>(*this));
         }
+#endif
 
 
     //- Destructor

@@ -25,23 +25,20 @@ License
 
 Foam::label Foam::sectionalLogNormalFvPatchScalarField::sectionIndex() const
 {
-    return readLabel(IStringStream(internalField().group())());
+    return readLabel(IStringStream(internalField().group())()) - 1;
 }
 
-Foam::scalarField Foam::sectionalLogNormalFvPatchScalarField::logNormalIntegral
+Foam::tmp<Foam::scalarField> Foam::sectionalLogNormalFvPatchScalarField::logNormalIntegral
 (
     const scalar& xl,
     const scalar& xu,
     const scalarField& CMM
 ) const
 {
-    return scalarField
+    return 0.5*
     (
-        0.5*
-        (
-            erf(log(xu/CMM)/(3.0*sqrt(2.0)*log(sigma_)))
-          - erf(log(max(xl/CMM,VSMALL))/(3.0*sqrt(2.0)*log(sigma_)))
-        )
+        erf(log(xu/CMM)/(3.0*sqrt(2.0)*log(sigma_)))
+      - erf(log(max(xl/CMM,VSMALL))/(3.0*sqrt(2.0)*log(sigma_)))
     );
 }
 
@@ -206,7 +203,7 @@ void Foam::sectionalLogNormalFvPatchScalarField::updateCoeffs()
           * exp((0.5*sqr(gamma_)-4.5)*sqr(log(sigma_)))
         );
 
-        const label i(sectionIndex()-1);
+        const label i(sectionIndex());
 
         const scalarField Fi
         (
@@ -223,10 +220,12 @@ void Foam::sectionalLogNormalFvPatchScalarField::updateCoeffs()
 void Foam::sectionalLogNormalFvPatchScalarField::write(Ostream& os) const
 {
     fvPatchScalarField::write(os);
-
-    os.writeEntry("sigma", sigma_);
-    os.writeEntry("gamma", gamma_);
+    os.writeKeyword("sigma")
+        << sigma_ << token::END_STATEMENT << nl;
+    os.writeKeyword("gamma")
+        << gamma_ << token::END_STATEMENT << nl;
     CMD_->writeData(os);
+
     writeEntry("value", os);
 }
 

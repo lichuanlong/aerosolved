@@ -40,17 +40,18 @@ void coupledNucleation::computeComposition
     const scalar& p,
     const scalarList& pVap,
     const scalarList& pSat,
+    const scalarList& gamma,
     const scalarList& D,
     const scalarList& v
 ) const
 {
-    #define F (sum(S*Foam::exp(-gamma*beta))-1.0)
-    #define dFdb sum(-gamma*S*Foam::exp(-gamma*beta))
+    #define F (sum(S*Foam::exp(-Gamma*beta))-1.0)
+    #define dFdb sum(-Gamma*S*Foam::exp(-Gamma*beta))
 
     scalar betaOld(0.0);
 
     const scalar vm(sum(v)/v.size());
-    const scalarList gamma(v/vm);
+    const scalarList Gamma(v/vm);
 
     for (label outerIter = 0; outerIter <= (maxOuterIter_-1); outerIter++)
     {
@@ -69,7 +70,7 @@ void coupledNucleation::computeComposition
         if (outerIter == 0)
         {
             const scalar maxSat(findMax<scalarList>(S));
-            beta = Foam::log(S[maxSat])/gamma[maxSat];
+            beta = Foam::log(S[maxSat])/Gamma[maxSat];
         }
 
         for (label innerIter = 0; innerIter <= (maxInnerIter_-1); innerIter++)
@@ -97,7 +98,7 @@ void coupledNucleation::computeComposition
             beta = betaNew;
         }
 
-        w = S*Foam::exp(-beta*gamma);
+        w = S*Foam::exp(-beta*Gamma);
 
         if (mag(betaOld-beta) < TOL_)
         {
@@ -155,6 +156,7 @@ nucData coupledNucleation::rate
     const scalar& T,
     const scalarList& Y,
     const scalarList& pSat,
+    const scalarList& gamma,
     const scalarList& D,
     const scalarList& rhoDisp,
     const scalarList& sigma
@@ -246,6 +248,7 @@ nucData coupledNucleation::rate
             p,
             pVap,
             pSat,
+            gamma,
             DiaMean/Da,
             v
         );

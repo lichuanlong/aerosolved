@@ -27,7 +27,6 @@ const Foam::word Foam::aerosolReader::speciesPropertiesName
     "speciesProperties"
 );
 
-
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 Foam::speciesTable& Foam::aerosolReader::setSpecies
@@ -42,8 +41,7 @@ Foam::speciesTable& Foam::aerosolReader::setSpecies
 
     word inertSpecie(dict.lookup("inertSpecie"));
 
-    // if (!sInactive.found(inertSpecie))
-    if (findIndex(sInactive, inertSpecie) == -1)
+    if (sInactive.find(inertSpecie) == -1)
     {
         FatalErrorInFunction
             << "The inert specie was not found in the inactive species lists"
@@ -51,8 +49,7 @@ Foam::speciesTable& Foam::aerosolReader::setSpecies
             << abort(FatalError);
     }
 
-    // if (sActive.found(inertSpecie))
-    if (findIndex(sActive, inertSpecie) != -1)
+    if (sActive.find(inertSpecie) != -1)
     {
         FatalErrorInFunction
             << "The inert specie cannot be set as active" << nl
@@ -61,8 +58,7 @@ Foam::speciesTable& Foam::aerosolReader::setSpecies
 
     forAll(sActive, j)
     {
-        // if (sActive.found(sActive[j]))
-        if (findIndex(sInactive, sActive[j]) != -1)
+        if (sInactive.find(sActive[j]) != -1)
         {
             FatalErrorInFunction
                 << "Found specie which is both active and inactive ("

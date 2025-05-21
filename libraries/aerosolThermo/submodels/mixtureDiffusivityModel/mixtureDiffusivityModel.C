@@ -143,9 +143,10 @@ PtrList<scalarField> mixtureDiffusivityModel::Deff() const
 
     const basicSpecieMixture& compCont = thermoCont.composition();
 
-    scalarList W(contSpecies.size(), 0.0);
+    scalarField W(contSpecies.size(), 0.0);
 
-    scalarList sumYoverW(thermo_.mesh().nCells(), 0.0);
+    scalarField sumYoverW(thermo_.mesh().nCells(), 0.0);
+    scalarField sumY(thermo_.mesh().nCells(), 0.0);
 
     forAll(contSpecies, k)
     {
@@ -153,7 +154,8 @@ PtrList<scalarField> mixtureDiffusivityModel::Deff() const
 
         W[k] = compCont.W(k);
 
-        sumYoverW = sumYoverW + Yk/W[k];
+        sumYoverW += Yk/W[k];
+        sumY += Yk;
     }
 
     PtrList<scalarField> Deff(contSpecies.size());
@@ -180,15 +182,20 @@ PtrList<scalarField> mixtureDiffusivityModel::Deff() const
     {
         for (label k = 0; k <= j; k++)
         {
-            const scalarList Djk(this->D(j,k));
+            const scalarField Djk(this->D(j,k));
 
-            Deff[j] += x[k]*Djk;
+            Deff[j] += x[k]/Djk;
 
             if (j != k)
             {
-                Deff[k] += x[j]*Djk;
+                Deff[k] += x[j]/Djk;
             }
         }
+    }
+
+    forAll(contSpecies, j)
+    {
+        Deff[j] = 1.0/Deff[j];
     }
 
     return Deff;
@@ -206,9 +213,10 @@ tmp<scalarField> mixtureDiffusivityModel::Deff(const label& j) const
 
     scalarField& Deff = tDeff.ref();
 
-    scalarList W(contSpecies.size(), 0.0);
+    scalarField W(contSpecies.size(), 0.0);
 
-    scalarList sumYoverW(thermo_.mesh().nCells(), 0.0);
+    scalarField sumYoverW(thermo_.mesh().nCells(), 0.0);
+    scalarField sumY(thermo_.mesh().nCells(), 0.0);
 
     forAll(contSpecies, k)
     {
@@ -216,7 +224,8 @@ tmp<scalarField> mixtureDiffusivityModel::Deff(const label& j) const
 
         W[k] = compCont.W(k);
 
-        sumYoverW = sumYoverW + Yk/W[k];
+        sumYoverW += Yk/W[k];
+        sumY += Yk;
     }
 
     forAll(contSpecies, k)
@@ -225,8 +234,10 @@ tmp<scalarField> mixtureDiffusivityModel::Deff(const label& j) const
 
         const scalarField xk(Yk/W[k]/sumYoverW);
 
-        Deff += xk*this->D(j,k);
+        Deff += xk/this->D(j,k);
     }
+
+    Deff = 1.0/Deff;
 
     return tDeff;
 }

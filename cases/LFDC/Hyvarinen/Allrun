@@ -1,0 +1,114 @@
+#!/bin/bash
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../../scripts/AeroSolvedRunFunctions
+
+checkPython3
+
+L=0.3           # Length of the pipe [m]
+R=0.002         # Radius of the pipe [m]
+TSAT=286.42     # Saturator temperatur [K]
+TPREH=296.63    # Pre-heater temperature [K]
+TCOND=263.05    # Condensor temperature [K]
+LPREH=0.04      # Length of the pre-heater [m]
+RATIO=3         # Axial cell length over radial cell length
+P=1.012e5       # Pressure [Pa]
+Q=17.29         # Flow rate [cm^3/s]
+
+YMIN=1E-25
+YMAX=1E-10
+
+MATH="import math as m"
+
+if ! [[ $1 =~ ^[1-9][0-9]? ]]; then
+    echo "Invalid mesh (specify radial number of cells)"
+    exit 1
+else
+    MESH=$1
+fi
+
+case $2 in
+
+    moment)
+
+        MODEL=twoMomentLogNormalAnalytical
+
+        N=1 #Dummy
+
+        MWALLBC=mixedAbsorbing
+
+        ;;
+
+    sectional)
+
+        MODEL=fixedSectional
+
+        if [[ ! $3 =~ ^[0-9]+ ]]; then
+
+            echo "Specify sectional density (in sections/mass decade)"
+            exit 1
+
+        fi
+
+        SECTIONSPERDECADE=$3
+
+        MWALLBC=sectionalMixedAbsorbing
+
+        N=$(echo "$MATH; print(int(m.log10($YMAX/$YMIN)*$SECTIONSPERDECADE))" | python3)
+
+        ;;
+    *)
+        echo "Invalid aerosol model specified (sectional or moment)"
+        exit 1
+        ;;
+esac
+
+NZ=$MESH
+
+DZ=$(echo "$MATH; print($R/$NZ)" | python3)
+NX=$(echo "$MATH; print(int(round($L/$DZ/$RATIO)))" | python3)
+
+Y=$(echo "$MATH; print(m.sin(2.0*m.pi/360.0*2.5)*$R)" | python3)
+Z=$(echo "$MATH; print(m.cos(2.0*m.pi/360.0*2.5)*$R)" | python3)
+Z2=$(echo "$MATH; print($Z*0.9999)" | python3)
+
+U=$(echo "$MATH; print($Q/1e6/(m.pi*$R**2))" | python3)
+
+VARS="\
+    -DVARR=$R \
+    -DVARL=$L \
+    -DVARLPREH=$LPREH \
+    -DVARY=$Y \
+    -DVARZ=$Z \
+    -DVARZ2=$Z2 \
+    -DVARNX=$NX \
+    -DVARNZ=$NZ \
+    -DVARN=$N \
+    -DVARYMIN=$YMIN \
+    -DVARYMAX=$YMAX \
+    -DVARMODEL=$MODEL \
+    -DVARTSAT=$TSAT \
+    -DVARTPREH=$TPREH \
+    -DVARTCOND=$TCOND \
+    -DVARP=$P \
+    -DVARU=$U \
+    -DVARMWALLBC=$MWALLBC \
+    "
+
+setMacros "$VARS"
+
+cp -r 0.org 0
+
+rm -f 0/*.m4
+
+runApplication blockMesh
+
+runApplication topoSet
+
+runApplication createPatch -overwrite
+
+runApplication setFields
+
+runApplication $(getApplication)

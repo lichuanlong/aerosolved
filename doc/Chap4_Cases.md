@@ -17,6 +17,16 @@ AeroSolved contains a number of cases for illustrating and/or validating the fun
 
 ## Validation cases
 
+### Particle terminal velocity 
+
+`cases/singleDroplet/terminalVelocity`
+
+The present validation case looks at the droplet's terminal velocity also called settling velocity. In quiescent air, droplets will accelerate until an equilibrium is reached between the drag and the gravitational force. This equilibrium results in a constant drift velocity, usually called terminal or settling velocity. Small enough droplets will follow the Stokes' Law while bigger droplets will deviate from it. The present case is testing the range of validity of our drag force implementation which uses the Shiller & Naumann correction. Water droplets are let to settle in an open volume. Droplets are released with zero initial velocity and the simulation is stopped after 60 seconds when steady conditions are reached.
+
+Simulation is performed with AeroSolved using the sectional model with a total of 48 sections spanning from 2.6<sup>−19</sup> kg to 1.7<sup>−5</sup> kg. The predicted terminal velocities are plotted as a function of the droplet diameter in the figures below. Also presented for comparison are the analytical terminal velocity predicted by the Stokes law and the experimental results of [Gunn & Kinzer (1949)](https://doi.org/10.1175/1520-0469(1949)006<0243:TTVOFF>2.0.CO;2).
+
+![velocityLog](fig/terminalVelocityLog.png){width=40%} ![velocity](fig/terminalVelocity.png){width=40%}
+
 ### Bent pipe particle deposition
 
 `cases/bentpipe`
@@ -47,9 +57,9 @@ This case serves as validation of the flow solver incorporated in AeroSolved. We
 
 ### Laminar Flow Diffusion Chamber (LFDC)
 
-`cases/LFDC`
+`cases/LFDC/Nguyen`
 
-The present validation case looks at aerosol formation in an LFDC, experimentally studied by [Nguyen et al. (1987)](https://doi.org/10.1016/0021-9797(87)90295-5). A pipe of length $L$ = 0.75 m and diameter $D$ = 1 cm is modeled using a two-dimensional wedge geometry, meshed with 32 and 1024 cells in the radial and axial directions, respectively. A flow containing air and a perfectly saturated dibutylphthalate (DBP) vapor is introduced at the inlet at a flow rate of, 1 l/min at 102 °C . The flow remains laminar throughout the domain. After a distance of 10 cm from the inlet, the pipe wall is cooled 21.4 °C. This lower wall temperature cools the air-DBP mixture such that the DBP eventually attains a sufficiently supersaturated state so that it can nucleate and condense into droplets. Thermophysical properties of the mixture are set the same as those experimentally investigated by [Nguyen et al. (1987)](https://doi.org/10.1016/0021-9797(87)90295-5).
+The present validation case looks at aerosol formation in an LFDC, experimentally studied by [Nguyen et al. (1987)](https://doi.org/10.1016/0021-9797(87)90295-5). A pipe of length $L$ = 0.75 m and diameter $D$ = 1 cm is modeled using a two-dimensional wedge geometry, meshed with 32 and 1024 cells in the radial and axial directions, respectively. Be aware that this validation case may take few hours to run. A flow containing air and a perfectly saturated dibutylphthalate (DBP) vapor is introduced at the inlet at a flow rate of, 1 l/min at 102 °C . The flow remains laminar throughout the domain. After a distance of 10 cm from the inlet, the pipe wall is cooled 21.4 °C. This lower wall temperature cools the air-DBP mixture such that the DBP eventually attains a sufficiently supersaturated state so that it can nucleate and condense into droplets. Thermophysical properties of the mixture are set the same as those experimentally investigated by [Nguyen et al. (1987)](https://doi.org/10.1016/0021-9797(87)90295-5).
 
 Simulations are performed with AeroSolved using the moment model with $\sigma_g$ = 1.2, and using the sectional model with $P$ = 8 sections/mass decade, spanning 10^<sup>-25</sup> to 10<sup>-10</sup> kg. The predicted outlet droplet size distributions using both models is presented in the figure below, along with the experimental data from [Nguyen et al. (1987)](https://doi.org/10.1016/0021-9797(87)90295-5).
 
@@ -107,7 +117,7 @@ A simple one-dimensional domain is used to test vapor diffusion. Vapor enters on
 
 `cases/elbow`
 
-This case contains a two-dimensional square elbow geometry. Due to the curvature in the flow, aerosol deposits on the wall. The case can be used to quickly test the inertial drift flux modeling.
+This case contains a two-dimensional square elbow geometry. Due to the curvature in the flow, aerosol deposits on the wall. The case can be used to quickly test the dispersed inertial drift flux modeling.
 
 ### Unsteady flow past a square cylinder
 

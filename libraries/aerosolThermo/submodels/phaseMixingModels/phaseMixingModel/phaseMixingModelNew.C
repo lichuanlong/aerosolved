@@ -28,14 +28,13 @@ namespace Foam
 
 autoPtr<phaseMixingModel> phaseMixingModel::New
 (
-    const aerosolThermo& thermo,
-    const word& modelType
+    const word& modelType,
+    const aerosolThermo& thermo
 )
 {
-    Info<< "    Selecting mixing model " << modelType << endl;
+    Info<< "    Selecting phase mixing model " << modelType << endl;
 
-    dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(modelType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {

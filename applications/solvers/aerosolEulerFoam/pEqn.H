@@ -108,6 +108,8 @@ U.correctBoundaryConditions();
 fvOptions.correct(U);
 K = 0.5*magSqr(U);
 
+aerosol->drift().correctPhaseVelocities();
+
 if (pressureControl.limit(p))
 {
     p.correctBoundaryConditions();

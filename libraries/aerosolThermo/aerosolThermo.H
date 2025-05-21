@@ -41,8 +41,10 @@ turbulence models.
 #include "pureMixture.H"
 #include "mixtureDiffusivityModel.H"
 #include "phaseMixing.H"
+#include "componentMixing.H"
 #include "speciesTable.H"
 #include "multivariateScheme.H"
+#include "activityCoeffModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -73,6 +75,9 @@ class aerosolThermo
 
         //- Phase mixing object
         autoPtr<phaseMixing> phaseMix_;
+
+        //- Activity coefficient model
+        autoPtr<activityCoeffModel> activity_;
 
         //- Species table
         speciesTable species_;
@@ -247,6 +252,11 @@ public:
             return fieldsZ_;
         }
 
+        inline const activityCoeffModel& activity() const
+        {
+            return activity_();
+        }
+
         //- Correct the thermodynamics of each phase
         virtual void correctThermo();
 
@@ -336,6 +346,14 @@ public:
             //- Extend psiThermo with a cell-based density [kg/m3]
             virtual tmp<scalarField> rho(const labelList& cells) const;
 
+            //- Density from pressure and temperature from EoS [kg/m3]
+            virtual tmp<scalarField> rhoEoS
+            (
+                const scalarField& p,
+                const scalarField& T,
+                const labelList& cells
+            ) const;
+
             //- Heat capacity at constant pressure [J/kg/K]
             virtual tmp<volScalarField> Cp() const;
 
@@ -345,6 +363,14 @@ public:
                 const scalarField& p,
                 const scalarField& T,
                 const label patchi
+            ) const;
+
+            //- Heat capacity at constant pressure for cell set [J/kg/K]
+            virtual tmp<scalarField> Cp
+            (
+                const scalarField& p,
+                const scalarField& T,
+                const labelList& cells
             ) const;
 
             //- Heat capacity at constant volume [J/kg/K]
@@ -493,6 +519,9 @@ public:
             virtual tmp<volScalarField> W() const;
 
             //- Mixture molecular weight
+            virtual tmp<scalarField> W(const label patchi) const;
+
+            //- Mixture molecular weight
             virtual tmp<volScalarField> WMix() const;
 
             //- Mixture molecular weight for a patch
@@ -504,16 +533,29 @@ public:
 
         // Lists of species properties
 
-            //- Saturation presures for a list of species
+            //- Saturation pressures for a list of species
             virtual PtrList<scalarField> pSat
             (
                 const speciesTable& species
             );
 
+            //- Saturation pressure for given species
+            virtual tmp<scalarField> pSat(const word speciesName);
+
             //- Dispersed densities for a list of species
             virtual PtrList<scalarField> rhoDisp
             (
                 const speciesTable& species
+            ) const;
+
+            //- Dispersed density for given species
+            virtual tmp<scalarField> rhoDisp(const word speciesName) const;
+
+            //- Dispersed density for given species and patch
+            virtual tmp<scalarField> rhoDisp
+            (
+                const word speciesName,
+                const label patchi
             ) const;
 
             //- Continuous densities for a list of species
@@ -522,11 +564,84 @@ public:
                 const speciesTable& species
             ) const;
 
+            //- Continuous density for given species
+            virtual tmp<scalarField> rhoCont(const word speciesName) const;
+
+            //- Continuous density for given patch
+            virtual tmp<scalarField> rhoCont
+            (
+                const word speciesName,
+                const label patchi
+            ) const;
+
+            //- Dispersed viscosities for a list of species
+            virtual PtrList<scalarField> muDisp
+            (
+                const speciesTable& species
+            ) const;
+
+            //- Dispersed viscosity for given species
+            virtual tmp<scalarField> muDisp(const word speciesName) const;
+
+
+            //- Continuous viscosities for a list of species
+            virtual PtrList<scalarField> muCont
+            (
+                const speciesTable& species
+            ) const;
+
+            //- Continuous viscosity for given species
+            virtual tmp<scalarField> muCont(const word speciesName) const;
+
+
+            //- Dispersed thermal diffusivities for a list of species
+            virtual PtrList<scalarField> alphaDisp
+            (
+                const speciesTable& species
+            ) const;
+
+            //- Dispersed thermal diffusivity for given species
+            virtual tmp<scalarField> alphaDisp(const word speciesName) const;
+
+
+            //- Continuous thermal diffusivities for a list of species
+            virtual PtrList<scalarField> alphaCont
+            (
+                const speciesTable& species
+            ) const;
+
+            //- Continuous thermal diffusivity for given species
+            virtual tmp<scalarField> alphaCont(const word speciesName) const;
+
+
+            //- Dispersed thermal conductivities for a list of species
+            virtual PtrList<scalarField> kappaDisp
+            (
+                const speciesTable& species
+            ) const;
+
+            //- Dispersed thermal conductivity for given species
+            virtual tmp<scalarField> kappaDisp(const word speciesName) const;
+
+
+            //- Continuous thermal conductivities for a list of species
+            virtual PtrList<scalarField> kappaCont
+            (
+                const speciesTable& species
+            ) const;
+
+            //- Continuous thermal conductivity for given species
+            virtual tmp<scalarField> kappaCont(const word speciesName) const;
+
+
             //- Surface tensions for a list of species
             virtual PtrList<scalarField> sigma
             (
                 const speciesTable& species
             );
+
+            //- Surface tension for given species
+            virtual tmp<scalarField> sigma(const word speciesName);
 
     // IO
 

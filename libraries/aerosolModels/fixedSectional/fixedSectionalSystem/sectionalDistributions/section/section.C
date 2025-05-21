@@ -75,36 +75,6 @@ section::section
             )
         )
     ),
-    phiBrownian_
-    (
-        IOobject
-        (
-            IOobject::groupName("phiBrownian", sectionName_),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        fvc::flux
-        (
-            volVectorField
-            (
-                IOobject
-                (
-                    "dummy",
-                    mesh.time().timeName(),
-                    mesh
-                ),
-                mesh,
-                dimensionedVector
-                (
-                    "dummy",
-                    dimVelocity*dimDensity,
-                    vector::zero
-                )
-            )
-        )
-    ),
     D_
     (
         IOobject
@@ -138,7 +108,7 @@ section::section
 
     if (fieldHeader.typeHeaderOk<volScalarField>(true))
     {
-        M_.set
+        M_.reset
         (
             new volScalarField
             (
@@ -174,7 +144,7 @@ section::section
             )
         );
 
-        M_.set
+        M_.reset
         (
             new volScalarField
             (

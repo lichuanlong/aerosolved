@@ -55,6 +55,8 @@ Foam::functionObjects::thermoField::thermoFieldTypeNames_
     { thermoFieldType::sumY, "sumY" },
     { thermoFieldType::sumZ, "sumZ" },
     { thermoFieldType::lambda, "lambda" },
+    { thermoFieldType::rhoCont, "rhoCont" },
+    { thermoFieldType::rhoDisp, "rhoDisp" },
 };
 
 
@@ -183,6 +185,26 @@ bool Foam::functionObjects::thermoField::calc()
             return store(resultName_, tf, true);
         }
 
+        case rhoCont:
+        {
+            const tmp<volScalarField> tf
+            (
+                new volScalarField(fHeader, thermo_.thermoCont().rho())
+            );
+
+            return store(resultName_, tf, true);
+        }
+
+        case rhoDisp:
+        {
+            const tmp<volScalarField> tf
+            (
+                new volScalarField(fHeader, thermo_.thermoDisp().rho())
+            );
+
+            return store(resultName_, tf, true);
+        }
+
         default:
 
             return false;
@@ -200,14 +222,7 @@ Foam::functionObjects::thermoField::thermoField
 )
 :
     fvMeshFunctionObject(name, runTime, dict),
-    thermoField_
-    (
-        #if OPENFOAM >= 1712
-        thermoFieldTypeNames_.get("thermoField", dict)
-        #else
-        thermoFieldTypeNames_.lookup("thermoField", dict)
-        #endif
-    ),
+    thermoField_(thermoFieldTypeNames_.get("thermoField", dict)),
     thermo_(lookupObjectRef<aerosolThermo>("thermophysicalProperties")),
     resultName_
     (

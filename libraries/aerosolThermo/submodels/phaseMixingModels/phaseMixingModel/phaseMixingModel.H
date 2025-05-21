@@ -101,8 +101,8 @@ public:
         //- Return a reference to the selected mixing model
         static autoPtr<phaseMixingModel> New
         (
-            const aerosolThermo& thermo,
-            const word& modelType
+            const word& modelType,
+            const aerosolThermo& thermo
         );
 
 

@@ -72,6 +72,9 @@ protected:
         //- Mass concentration rate change field (monitor)
         PtrList<volScalarField> I_;
 
+        //- Switch to rescale the sections to match the mass fractions (defaults
+        //  to true)
+        Switch rescale_;
 
     //- Protected Member Functions
 
@@ -109,7 +112,10 @@ public:
     // Member Functions
 
         //- Correct the aerosol model
-        virtual void correctModel();
+        virtual void correct();
+
+        //- Correct the drift flux model
+        virtual void correctDriftFlux();
 
         //- Solution step before the mass fraction solution
         virtual void solvePre();
@@ -128,6 +134,14 @@ public:
         (
             const scalar p,
             const scalar q
+        ) const;
+
+        //- Moment p and q ratio mean diameter on the given patch
+        virtual tmp<scalarField> meanDiameter
+        (
+            const scalar p,
+            const scalar q,
+            const label patchi
         ) const;
 
         //- Moment p median diameter

@@ -17,18 +17,14 @@ License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 \*---------------------------------------------------------------------------*/
 
-const scalar maxAerosolCo =
-    runTime.controlDict().lookupOrDefault<scalar>("maxAerosolCo", maxCo);
-
-const scalar maxDriftCo =
-    runTime.controlDict().lookupOrDefault<scalar>("maxDriftCo", maxCo);
-
 scalar aerosolCoNum = 0.0;
 scalar driftCoNum = 0.0;
 scalar relCoNum = 0.0;
+scalar corrCoNum = 0.0;
 
-if (aerosol->drift().inertial().type() != "none")
 {
+    // Aerosol Courant number
+
     forAll(Z, j)
     {
         aerosolCoNum = max
@@ -46,28 +42,47 @@ if (aerosol->drift().inertial().type() != "none")
         );
     }
 
-    const surfaceScalarField& phiInertial = aerosol->phiInertial();
-    const surfaceScalarField& phiBrownian = aerosol->phiBrownian();
+    const surfaceScalarField& phiInertial = aerosol->drift().phiInertial();
+    const surfaceScalarField& phiCorr = aerosol->drift().phiCorr();
+
+    // Drift Courant number
 
     scalarField sumPhi
     (
-        fvc::surfaceSum(mag(phi+phiInertial+phiBrownian))().primitiveField()
+        fvc::surfaceSum(mag(phi+phiInertial))().primitiveField()
       / rho.primitiveField()
     );
 
     driftCoNum =  0.5*gMax(sumPhi/mesh.V().field())*runTime.deltaTValue();
 
+    // Relative Courant number
+
     scalarField sumPhiv
     (
-        fvc::surfaceSum(mag(phiInertial+phiBrownian))().primitiveField()
+        fvc::surfaceSum(mag(phiInertial))().primitiveField()
       / rho.primitiveField()
     );
 
     relCoNum = 0.5*gMax(sumPhiv/mesh.V().field())*runTime.deltaTValue();
+
+    // Corrective flux Courant number
+
+    scalarField sumPhic
+    (
+        fvc::surfaceSum(mag(phiCorr))().primitiveField()
+      / rho.primitiveField()
+    );
+
+    corrCoNum = 0.5*gMax(sumPhic/mesh.V().field())*runTime.deltaTValue();
 }
 
-Info<< "Aerosol Courant Number max: " << aerosolCoNum << endl;
-Info<< "Drift Courant Number max: " << driftCoNum << endl;
-Info<< "Relative Courant Number max: " << relCoNum << endl;
+// Print CFL numbers
+
+Info<< "Aerosol Courant Number max: " << aerosolCoNum << nl;
+Info<< "Drift Courant Number max: " << driftCoNum << nl;
+Info<< "Relative Courant Number max: " << relCoNum << nl;
+Info<< "Corrective Courant Number max: " << corrCoNum << nl;
+
+Info<< endl;
 
 // ************************************************************************* //

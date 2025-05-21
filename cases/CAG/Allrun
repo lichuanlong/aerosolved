@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd ${0%/*} || exit 1
 
@@ -19,11 +19,13 @@ case $2 in
     moment)
         MODEL=twoMomentLogNormalAnalytical
         FLUXTYPE=twoMomentFlux
+        MWALLBC=mixedAbsorbing
         ;;
 
     sectional)
         MODEL=fixedSectional
         FLUXTYPE=sectionalFlux
+        MWALLBC=sectionalMixedAbsorbing
         ;;
     *)
         echo "Invalid aerosol model specified (sectional or moment)"
@@ -130,6 +132,7 @@ VARS="\
     -DVARGY4=$GY4 \
     -DVARMODEL=$MODEL \
     -DVARFLUXTYPE=$FLUXTYPE \
+    -DVARMWALLBC=$MWALLBC \
     "
 
 setMacros "$VARS"

@@ -36,8 +36,7 @@ autoPtr<condensationModel> condensationModel::New
 
     Info<< "    Selecting condensation model " << modelType << endl;
 
-    dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(modelType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {

@@ -34,7 +34,6 @@ which can be evaluated by the aerosol model do determine the condensation rate.
 #include "aerosolSubModelBase.H"
 #include "runTimeSelectionTables.H"
 #include "conData.H"
-#include "activityCoeffModel.H"
 #include "volFields.H"
 #include "PtrList.H"
 #include "speciesTable.H"
@@ -60,15 +59,6 @@ class condensationModel
 
         //- Disallow default bitwise assignment
         void operator=(const condensationModel&);
-
-
-protected:
-
-    // Protected Data
-
-        //- Activity coefficient model
-        autoPtr<activityCoeffModel> activity_;
-
 
 public:
 
@@ -119,16 +109,24 @@ public:
 
         // Evolution
 
-            //- Compute the condensation rate coefficients
+            //- Compute the condensation rate coefficients as a function of mean
+            //  diameter, pressure, temperature, continuous phase mass
+            //  fractions, dispersed phase mass fractions, saturation pressures,
+            //  activity coefficients, diffusivities, continuous phase
+            //  densities, dispersed phase densities and surface tensions
             virtual conData rate
             (
-                const scalar& p,
-                const scalar& T,
+                const scalar d,
+                const scalar p,
+                const scalar T,
                 const scalarList& Y,
                 const scalarList& Z,
                 const scalarList& pSat,
+                const scalarList& gamma,
                 const scalarList& D,
-                const scalarList& rhoCont
+                const scalarList& rhoCont,
+                const scalarList& rhoDisp,
+                const scalarList& sigma
             ) const = 0;
 
             //- Heat of vaporization helper function

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd ${0%/*} || exit 1
 
@@ -17,7 +17,7 @@ DRWALL=1E-4     # Radial cell size at the wall [m]
 # Read input
 
 if ! [[ $1 =~ ^(fullStokes|Manninen)$ ]]; then
-    echo "Invalid inertial model (fullStokes or Manninen)"
+    echo "Invalid inertial drift model (fullStokes or Manninen)"
     exit 1
 else
     INERTIALMODEL=$1
@@ -28,13 +28,17 @@ case $2 in
     moment)
         MODEL=twoMomentLogNormalAnalytical
         FLUXTYPE=twoMomentFlux
-        MINLETBCNAME=twoMomentLogNormal
+        MINLETBC=twoMomentLogNormal
+        MWALLBC=mixedAbsorbing
+        ZWALLBC=mixedAbsorbing
         ;;
 
     sectional)
         MODEL=fixedSectional
         FLUXTYPE=sectionalFlux
-        MINLETBCNAME=sectionalLogNormal
+        MINLETBC=sectionalLogNormal
+        MWALLBC=sectionalMixedAbsorbing
+        ZWALLBC=massFracFromSectional
         ;;
     *)
         echo "Invalid aerosol model specified (sectional or moment)"
@@ -108,7 +112,9 @@ VARS="\
     -DVARINERTIALMODEL=$INERTIALMODEL \
     -DVARMODEL=$MODEL \
     -DVARFLUXTYPE=$FLUXTYPE \
-    -DVARMINLETBCNAME=$MINLETBCNAME \
+    -DVARMINLETBC=$MINLETBC \
+    -DVARMWALLBC=$MWALLBC
+    -DVARZWALLBC=$ZWALLBC \
     -DVARX0=$X0 \
     -DVARX1=$X1 \
     -DVARY0=$Y0 \

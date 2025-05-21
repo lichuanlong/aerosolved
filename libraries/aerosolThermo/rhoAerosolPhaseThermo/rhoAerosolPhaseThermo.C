@@ -38,8 +38,12 @@ Foam::rhoAerosolPhaseThermo::rhoAerosolPhaseThermo
 :
     speciesTable(),
     rhoReactionThermo(mesh, phaseName),
-    aerosolPropertyReader(*this, *this, phaseName)
-{}
+    aerosolPropertyReader(*this, *this, phaseName),
+    mesh_(mesh),
+    compMix_()
+{
+    compMix_.reset(new componentMixing(*this));
+}
 
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -54,13 +58,34 @@ Foam::autoPtr<Foam::rhoAerosolPhaseThermo> Foam::rhoAerosolPhaseThermo::New
 }
 
 
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::rhoAerosolPhaseThermo::~rhoAerosolPhaseThermo()
+{}
+
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
+
+
+void Foam::rhoAerosolPhaseThermo::correctMixing()
+{
+    compMix_->viscosity().mix(mu_);
+    compMix_->conductivity().mix(alpha_);
+}
 
 Foam::tmp<Foam::volScalarField> Foam::rhoAerosolPhaseThermo::WMix() const
 {
     return W();
 }
 
+Foam::tmp<Foam::volScalarField> Foam::rhoAerosolPhaseThermo::rho() const
+{
+    return rhoReactionThermo::rho();
+}
+
+Foam::volScalarField& Foam::rhoAerosolPhaseThermo::rho()
+{
+    return rhoReactionThermo::rho();
+}
 
 Foam::tmp<Foam::scalarField> Foam::rhoAerosolPhaseThermo::rho
 (
@@ -79,5 +104,12 @@ Foam::tmp<Foam::scalarField> Foam::rhoAerosolPhaseThermo::rho
     return trho;
 }
 
+Foam::tmp<Foam::scalarField> Foam::rhoAerosolPhaseThermo::rho
+(
+    const label patchi
+) const
+{
+    return rhoReactionThermo::rho(patchi);
+}
 
 // ************************************************************************* //

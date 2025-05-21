@@ -9,4 +9,9 @@ wmake libso libraries/aerosolThermo
 wmake libso libraries/aerosolModels
 
 wmake applications/solvers/aerosolEulerFoam
+wmake applications/solvers/aerosolEulerFoam/aerosolBuoyantEulerFoam
 
+wmake applications/test/aerosolThermo
+
+wmake applications/utilities/setSaturatedMixture
+wmake applications/utilities/setLogNormal

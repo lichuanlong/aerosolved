@@ -1,9 +1,4 @@
-sinclude $(GENERAL_RULES)/module-path-user
-
-/* Failsafe - user location */
-ifeq (,$(strip $(FOAM_MODULE_LIBBIN)))
-    FOAM_MODULE_LIBBIN = $(FOAM_USER_LIBBIN)
-endif
+$(shell ./generateGitInfo.sh > /dev/null 2>&1)
 
 EXE_INC = \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
@@ -15,10 +10,10 @@ EXE_INC = \
     -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/dynamicMesh/lnInclude \
     -I$(LIB_SRC)/functionObjects/field/lnInclude \
-    -I../aerosolThermo/lnInclude \
     -I$(LIB_SRC)/OpenFOAM/lnInclude \
-    -I../helper
+    -I../aerosolThermo/lnInclude
 
 LIB_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
@@ -29,4 +24,5 @@ LIB_LIBS = \
     -laerosolThermophysicalModels \
     -lfiniteVolume \
     -lmeshTools \
+    -ldynamicMesh \
     -lfieldFunctionObjects

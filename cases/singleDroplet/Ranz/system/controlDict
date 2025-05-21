@@ -27,7 +27,7 @@ purgeWrite      0;
 
 writeFormat     binary;
 
-writePrecision  10;
+writePrecision  8;
 
 writeCompression no;
 

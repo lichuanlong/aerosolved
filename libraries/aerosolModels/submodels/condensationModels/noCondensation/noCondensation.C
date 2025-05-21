@@ -54,13 +54,17 @@ noCondensation::~noCondensation()
 
 conData noCondensation::rate
 (
-    const scalar& p,
-    const scalar& T,
+    const scalar d,
+    const scalar p,
+    const scalar T,
     const scalarList& Y,
     const scalarList& Z,
     const scalarList& pSat,
+    const scalarList& gamma,
     const scalarList& D,
-    const scalarList& rhoCont
+    const scalarList& rhoCont,
+    const scalarList& rhoDisp,
+    const scalarList& sigma
 ) const
 {
     return conData(pSat.size());

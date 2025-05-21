@@ -27,7 +27,7 @@ purgeWrite      0;
 
 writeFormat     ascii;
 
-writePrecision  20;
+writePrecision  8;
 
 writeCompression off;
 
@@ -45,3 +45,57 @@ maxDeltaT       1E-2;
 
 libs            ("libcustomFunctions.so");
 
+functions
+{
+    SMF
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        regionType      patch;
+        operation       average;
+        name            inlet;
+
+        writeFields     no;
+
+        fields
+        (
+            Air.continuous
+            Water.continuous
+            PG.continuous
+            VG.continuous
+
+            Water.dispersed
+            PG.dispersed
+            VG.dispersed
+        );
+    }
+
+    S.PG
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         PG;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    S.VG
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         VG;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    S.Water
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         Water;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+}

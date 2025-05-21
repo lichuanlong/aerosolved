@@ -15,9 +15,9 @@ boundaryField
 {
     inlet
     {
-        type        VARMINLETBCNAME;
+        type        VARMINLETBC;
         CMD         1E-6;
-        sigma       4.0;
+        sigma       0.5;
         value       $internalField;
     }
 
@@ -30,7 +30,7 @@ boundaryField
 
     walls
     {
-        type        zeroGradientAbsorbingWall;
+        type        VARMWALLBC;
         value       $internalField;
     }
 

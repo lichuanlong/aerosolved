@@ -47,11 +47,28 @@ libs            ("libcustomFunctions.so");
 
 functions
 {
+    dispersedMask
+    {
+        type            dispersedMask;
+        libs            ("libaerosolModels.so");
+        threshold       1e-10;
+        writeControl    writeTime;
+    }
+
     dcm
     {
         type            countMeanDiameter;
         libs            ("libaerosolModels.so");
         writeControl    writeTime;
+    }
+
+    CMD
+    {
+        type            medianDiameter;
+        p               0.0
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+        result          CMD;
     }
 
     dropletFlux
@@ -67,6 +84,35 @@ functions
         type            massFlux;
         libs            ("libaerosolModels.so");
         patches         (inlet outlet walls);
+        writeControl    writeTime;
+    }
+
+    volAverageDiameters
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeFields     no;
+        regionType      all;
+
+        operation       weightedVolAverage;
+        weightField     dispersedMask;
+
+        fields
+        (
+            dcm
+            CMD
+        );
+    }
+
+    fluxDensity
+    {
+        type            boundaryFluxDensity;
+        libs            ("libaerosolModels.so");
+
+        phi             phiEff.Water.dispersed;
+        result          fluxDensity.Water.dispersed;
+
+        executeControl  writeTime;
         writeControl    writeTime;
     }
 }

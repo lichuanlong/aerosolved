@@ -21,6 +21,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "aerosolModel.H"
 #include "rhoAerosolPhaseThermo.H"
+#include "constants.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -40,7 +41,8 @@ coupledCondensation::coupledCondensation
     const dictionary& dict
 )
 :
-    condensationModel(type(), aerosol, dict)
+    condensationModel(type(), aerosol, dict),
+    KelvinEffect_(dict.lookupOrDefault<Switch>("KelvinEffect", false))
 {}
 
 
@@ -54,25 +56,22 @@ coupledCondensation::~coupledCondensation()
 
 conData coupledCondensation::rate
 (
-    const scalar& p,
-    const scalar& T,
+    const scalar d,
+    const scalar p,
+    const scalar T,
     const scalarList& Y,
     const scalarList& Z,
     const scalarList& pSat,
+    const scalarList& gamma,
     const scalarList& D,
-    const scalarList& rhoCont
+    const scalarList& rhoCont,
+    const scalarList& rhoDisp,
+    const scalarList& sigma
 ) const
 {
-    // TODO: fix problem with different sizes in condensation/nucleation
-    // if(Y.size()!=Z.size()) {
-    //     FatalErrorInFunction
-    //         << "Sizes of Y " << Y.size() << " and Z "
-    //             << Z.size() << " must be equal"
-    //             << endl
-    //             << exit(FatalError);
-    // }
-
     const scalar pi = constant::mathematical::pi;
+    const scalar kB = constant::physicoChemical::k.value();
+    const scalar NA = constant::physicoChemical::NA.value();
 
     aerosolThermo& thermo = aerosol_.thermo();
 
@@ -103,30 +102,42 @@ conData coupledCondensation::rate
             W[j] = compCont.W(j);
         }
 
-        // Kelvin and Fuchs & Sutugin to unity, for now
-
-        scalar Ke = 1.0;
-        scalar beta = 1.0;
-
-        // Activity coefficients
-
-        const scalarList gamma(activity_->activity(Z));
+        const scalarList Wd(W, thermo.dispSpeciesMap());
 
         // Compute fractions w.r.t. the dispersed phase
 
         const scalarList z(Z/sumZ);
-        const scalarList w(z/W/sum(z/W));
+        const scalarList w(z/Wd/sum(z/Wd));
 
         // Compute fractions w.r.t. the continuous phase
 
         const scalarList y(Y/sumY);
         const scalarList x(y/W/sum(y/W));
 
+        // Kelvin effect factor
+
+        scalar Ke = 1.0;
+
+        if (KelvinEffect_)
+        {
+            const scalarList Md(0.001*Wd/NA);
+            const scalar rhol = 1.0/sum(z/rhoDisp);
+            const scalar vl = sum(w*Md)/rhol;
+            const scalar sigmal = sum(w*sigma);
+
+            Ke = exp(4.0*sigmal*vl/(kB*T*d));
+        }
+
+        // Set Fuchs & Sutugin correction factor to unity, for now
+
+        scalar beta = 1.0;
+
         // Compute pressures
 
         const scalarList pSurf(gamma*Ke*pSat*w);
+        const scalarList pVap(p*x);
         const scalarList pVapOverY(p/W/sum(Y/W));
-        const scalarList pSurfOverZ(gamma*Ke*pSat/W/sum(Z/W));
+        const scalarList pSurfOverZ(gamma*Ke*pSat/Wd/sum(Z/Wd));
 
         // Compute xi
 
@@ -138,9 +149,13 @@ conData coupledCondensation::rate
 
         const scalar DiaMean(sum(Dia*xia)/sum(xia));
 
+        const scalarList pSurfa(pSurf, thermo.activeSpeciesMap());
+        const scalarList pVapa(pVap, thermo.activeSpeciesMap());
+
         const scalarList xi
         (
-            DiaMean/Da*Foam::log(max(1.0-sum(pSurf)/p, 0.1))
+            DiaMean/Da
+          * Foam::log(max((p-sum(pSurfa))/(p-sum(pVapa)), 0.1))
         );
 
         // Compute condensation rates

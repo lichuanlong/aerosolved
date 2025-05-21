@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd ${0%/*} || exit 1
 
@@ -17,7 +17,7 @@ else
 fi
 
 if ! [[ $2 =~ ^(fullStokes|Manninen)$ ]]; then
-    echo "Invalid inertial model (fullStokes or Manninen)"
+    echo "Invalid inertial drift model (fullStokes or Manninen)"
     exit 1
 else
     INERTIALMODEL=$2

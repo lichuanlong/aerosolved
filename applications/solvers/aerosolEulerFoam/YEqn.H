@@ -18,80 +18,211 @@ License
 \*---------------------------------------------------------------------------*/
 
 {
-    // Prepare
+    // Optionally rescale all mass fractions to force a unity sum
 
-    volScalarField Yt(0.0*Y[0]);
+    const Switch rescale =
+        pimple.dict().lookupOrDefault<Switch>("rescale", true);
+
+    // Optionally add continuous phase diffusion correction to make the
+    // diffusion term proportional to mole fraction, not mass fraction
+
+    const Switch molarDiffusion =
+        pimple.dict().lookupOrDefault<Switch>("molarDiffusion", false);
+
+    // Prepare fields
+
+    scalarField Yt(mesh.nCells(), 0.0);
 
     const volScalarField mut(turbulence->mut());
+    const volScalarField sumY(thermo.sumY());
 
-    const surfaceScalarField& phiDrift = aerosol->phiDrift();
-    const surfaceScalarField& phiInertial = aerosol->phiInertial();
-    const surfaceScalarField& phiBrownian = aerosol->phiBrownian();
+    const surfaceScalarField& phiInertial = aerosol->drift().phiInertial();
+    surfaceScalarField& phiCorr = aerosol->drift().phiCorr();
 
-    const fv::convectionScheme<scalar>& mvPhi = aerosol->mvPhi();
-    const fv::convectionScheme<scalar>& mvPhiDrift = aerosol->mvPhiDrift();
-    const fv::convectionScheme<scalar>& mvPhiInertial = aerosol->mvPhiInertial();
-    const fv::convectionScheme<scalar>& mvPhiBrownian = aerosol->mvPhiBrownian();
+    const fv::convectionScheme<scalar>& mvPhi = aerosol->drift().mvPhi();
+    const fv::convectionScheme<scalar>& mvPhiCorr =
+        aerosol->drift().mvPhiCorr();
+    const fv::convectionScheme<scalar>& mvPhiInertial =
+        aerosol->drift().mvPhiInertial();
 
-    phiEffY[inertIndex] = phi;
+    surfaceScalarField sumPhiEff(0.0*phi);
+
+    // Field to collect all the new drift fluxes in, which is then used to
+    // update the phiCorr field
+
+    surfaceScalarField phiCorrNew("phiCorrNew", phiCorr*0.0);
+
+    // Reset the drift stress tensor
+
+    tauDrift *= 0.0;
 
     // Continuous mass fraction equations
 
     forAll(Y, j)
     {
-        if (j != inertIndex)
+        volScalarField& Yj = Y[j];
+
+        const volScalarField& D = aerosol->drift().DCont()[j];
+
+        // Diffusive drift. Add a correction to make diffusion proportional to
+        // grad(yj) instead of grad(Yj). This is important for when sum(Zj)
+        // becomes significant. Optionally correct the term such that it is
+        // proportional to the mole fraction gradient instead of the mass
+        // fraction gradient.
+
+        tmp<fvScalarMatrix> tdriftDiff;
+
+        if (!molarDiffusion)
         {
-            volScalarField& Yj = Y[j];
+            // Diffusive flux is muEff*grad(yj), yj = phase-specific mass
+            // fraction
 
-            const volScalarField& D = aerosol->DCont()[j];
-
-            fvScalarMatrix YjEqn
+            surfaceScalarField phiCorrDiff
             (
-                fvm::ddt(rho, Yj)
-              + mvPhi.fvmDiv(phi, Yj)
-              - mvPhiDrift.fvmDiv(phiDrift, Yj)
-             ==
-                aerosol->R(Yj)
-              + fvm::laplacian(mut+rho*D, Yj,"laplacian(mut+rho*D,Yj)")
-              + fvOptions(rho, Yj)
+                linearInterpolate(rho*D)*fvc::snGrad(1.0/sumY)*mesh.magSf()
             );
 
-            YjEqn.relax();
-
-            fvOptions.constrain(YjEqn);
-
-            YjEqn.solve(mesh.solver("Y"));
-
-            fvOptions.correct(Yj);
-
-            Yj.max(0.0);
-            Yt += Yj;
-
-            phiEffY[j] = YjEqn.flux();
-
-            phiEffY[inertIndex] -= phiEffY[j];
+            tdriftDiff =
+            (
+              - fvm::laplacian(mut+rho*D/sumY, Yj, "laplacian(mut+rho*D,Yj)")
+              - fv::gaussConvectionScheme<scalar>
+                (
+                    mesh,
+                    phiCorrDiff,
+                    linear<scalar>(mesh)
+                ).fvmDiv(phiCorrDiff, Yj)
+            );
         }
+        else
+        {
+            // Diffusive flux is muEff*grad(xj), xj = phase-specific mole
+            // fraction
+
+            const volScalarField W(thermo.thermoCont().WMix());
+
+            const dimensionedScalar Wj
+            (
+                dimMass/dimMoles,
+                thermo.thermoCont().composition().W(j)
+            );
+
+            const surfaceScalarField phiCorrDiff
+            (
+                linearInterpolate(rho*D/Wj)*fvc::snGrad(W/sumY)
+              * mesh.magSf()
+            );
+
+            tdriftDiff =
+            (
+              - fvm::laplacian
+                (
+                    mut+rho*D*W/sumY/Wj,
+                    Yj,
+                    "laplacian(mut+rho*D,Yj)"
+                )
+              - fv::gaussConvectionScheme<scalar>
+                (
+                    mesh,
+                    phiCorrDiff,
+                    linear<scalar>(mesh)
+                ).fvmDiv(phiCorrDiff, Yj)
+            );
+        }
+
+        const fvScalarMatrix& driftDiff = tdriftDiff();
+
+        // Mass fraction equation
+
+        fvScalarMatrix YjEqn
+        (
+            fvm::ddt(rho, Yj)
+          + mvPhi.fvmDiv(phi, Yj)
+          + driftDiff
+            ==
+            aerosol->R(Yj)
+          + fvOptions(rho, Yj)
+          + mvPhiCorr.fvmDiv(phiCorr, Yj)
+        );
+
+        YjEqn.relax();
+
+        fvOptions.constrain(YjEqn);
+
+        YjEqn.solve(mesh.solver("Y"));
+
+        fvOptions.correct(Yj);
+
+        Yj.correctBoundaryConditions();
+        Yj.max(0.0);
+        Yj.min(1.0);
+
+        Yt += Yj.field();
+
+        // Store fluxes
+
+        phiEffY[j] = YjEqn.flux();
+        phiCorrNew += driftDiff.flux();
+
+        sumPhiEff += phiEffY[j];
+
+        // Add to the drift stress tensor, by reconstructing the
+        // mixture-relative drift velocity from the fluxes
+
+        tauDrift -=
+            sqr
+            (
+                fvc::reconstruct(driftDiff.flux())
+              / max(fvc::average(Yj),1e-9)
+              - fvc::reconstruct(phiCorr)
+            )
+          * Yj/rho;
     }
 
-    // Dispersed mass fraction equations
+    // Corrective flux to account for the fact that dispersed phase diffusion is
+    // proportional to the gradient of number concentration per unit volume, not
+    // number concentration per unit mass
 
-    const volScalarField& D = aerosol->DDisp();
+    const volScalarField& D = aerosol->drift().DDisp();
+    const surfaceScalarField& phiCorrDiff = aerosol->drift().phiCorrDiff();
+
+    // Dispersed mass fraction equations
 
     forAll(Z, j)
     {
         volScalarField& Zj = Z[j];
 
+        // Diffusive drift
+
+        fvScalarMatrix driftDiff
+        (
+          - fvm::laplacian(mut+rho*D, Zj, "laplacian(mut+rho*D,Zj)")
+          - fv::gaussConvectionScheme<scalar>
+            (
+                mesh,
+                phiCorrDiff,
+                linear<scalar>(mesh)
+            ).fvmDiv(phiCorrDiff, Zj)
+        );
+
+        // Inertial drift
+
+        fvScalarMatrix driftInertial
+        (
+            mvPhiInertial.fvmDiv(phiInertial, Zj)
+        );
+
+        // Mass fraction equation
+
         fvScalarMatrix ZjEqn
         (
             fvm::ddt(rho, Zj)
           + mvPhi.fvmDiv(phi, Zj)
-          + mvPhiInertial.fvmDiv(phiInertial, Zj)
-          + mvPhiBrownian.fvmDiv(phiBrownian, Zj)
-          - mvPhiDrift.fvmDiv(phiDrift, Zj)
+          + driftDiff
+          + driftInertial
           ==
             aerosol->R(Zj)
-          + fvm::laplacian(mut+rho*D, Zj,"laplacian(mut+rho*D,Zj)")
           + fvOptions(rho, Zj)
+          + mvPhiCorr.fvmDiv(phiCorr, Zj)
         );
 
         ZjEqn.relax();
@@ -103,14 +234,51 @@ License
         fvOptions.correct(Zj);
 
         Zj.max(0.0);
+        Zj.min(1.0);
+        Zj.correctBoundaryConditions();
+
         Yt += Zj;
 
-        phiEffZ[j] = ZjEqn.flux();
+        // Store fluxes
 
-        phiEffY[inertIndex] -= phiEffZ[j];
+        phiEffZ[j] = ZjEqn.flux();
+        phiCorrNew += driftDiff.flux() + driftInertial.flux();
+
+        sumPhiEff += phiEffZ[j];
+
+        // Add to the drift stress tensor, by reconstructing the
+        // mixture-relative drift velocity from the fluxes
+
+        tauDrift -=
+            sqr
+            (
+                fvc::reconstruct(driftDiff.flux())
+              / max(fvc::average(Zj), 1e-9)
+              + fvc::reconstruct(phiInertial-phiCorr)
+            )
+          * Zj/rho;
     }
 
-    Y[inertIndex] = scalar(1) - Yt;
-    Y[inertIndex].max(0.0);
-    Y[inertIndex].correctBoundaryConditions();
+    Info<< "Cumulative mass fraction "
+        << "min = " << min(Yt) << ", max = " << max(Yt)
+        << ", mean defect = " << average(mag(1.0-Yt)) << endl;
+
+    if (rescale)
+    {
+        Info << "Rescaling mass fractions" << endl;
+
+        forAll(Y, j)
+        {
+            Y[j].field() /= Yt;
+            Y[j].correctBoundaryConditions();
+        }
+
+        forAll(Z, j)
+        {
+            Z[j].field() /= Yt;
+            Z[j].correctBoundaryConditions();
+        }
+    }
+
+    phiCorr = phiCorrNew;
 }

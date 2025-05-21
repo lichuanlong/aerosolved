@@ -30,7 +30,11 @@ Foam::autoPtr<Foam::diffusivityModel> Foam::diffusivityModel::New
     const label k
 )
 {
-    Istream& is(dict.lookup(entryName, false));
+    // It's important to create the Istream reference from a copy of the
+    // dictionary
+
+    dictionary copy(dict);
+    Istream& is(copy.lookup(entryName, keyType::LITERAL));
 
     token firstToken(is);
 
@@ -38,13 +42,10 @@ Foam::autoPtr<Foam::diffusivityModel> Foam::diffusivityModel::New
 
     diffusivityModelType = firstToken.wordToken();
 
-    typename dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(diffusivityModelType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(diffusivityModelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {
-        is.putBack(firstToken);
-
         cstrIter = dictionaryConstructorTablePtr_->find("function");
     }
 

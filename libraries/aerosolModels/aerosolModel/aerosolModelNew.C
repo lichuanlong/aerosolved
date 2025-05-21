@@ -46,8 +46,7 @@ Foam::aerosolModel::New
 
     Info<< "Selecting aerosol model " << aeroTypeName << endl;
 
-    dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(aeroTypeName);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(aeroTypeName);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {

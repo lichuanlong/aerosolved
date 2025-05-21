@@ -52,8 +52,15 @@ Foam::aerosolModels::noAerosol::~noAerosol()
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-void Foam::aerosolModels::noAerosol::correctModel()
+void Foam::aerosolModels::noAerosol::correct()
 {}
+
+void Foam::aerosolModels::noAerosol::correctDriftFlux()
+{
+    // Update the drift model to set the convection schemes
+
+    drift_->correct();
+}
 
 void Foam::aerosolModels::noAerosol::solvePre()
 {}
@@ -133,6 +140,26 @@ Foam::aerosolModels::noAerosol::meanDiameter
             ),
             this->mesh(),
             dimensionedScalar("D", dimLength, 0.0)
+        )
+    );
+
+    return td;
+}
+
+Foam::tmp<Foam::scalarField>
+Foam::aerosolModels::noAerosol::meanDiameter
+(
+    const scalar p,
+    const scalar q,
+    const label patchi
+) const
+{
+    tmp<scalarField> td
+    (
+        new scalarField
+        (
+            this->mesh().boundaryMesh()[patchi].size(),
+            0.0
         )
     );
 

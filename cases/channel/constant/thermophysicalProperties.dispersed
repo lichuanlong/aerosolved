@@ -29,7 +29,7 @@ species
         equationOfState
         {
             R           3000;
-            rho0        1027;
+            rho0        1000;
         }
         thermodynamics
         {
@@ -54,8 +54,8 @@ species
         }
         equationOfState
         {
-            R           3000;
-            rho0        1000;
+            R           30000;
+            rho0        1001.90;
         }
         thermodynamics
         {
@@ -81,8 +81,8 @@ species
         }
         equationOfState
         {
-            R           3000;
-            rho0        1000;
+            R           30000;
+            rho0        1036.34;
         }
         thermodynamics
         {
@@ -108,8 +108,8 @@ species
         }
         equationOfState
         {
-            R           3000;
-            rho0        1000;
+            R           30000;
+            rho0        1261.19;
         }
         thermodynamics
         {

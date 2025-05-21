@@ -18,6 +18,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "exponential.H"
+#include "AntoineYaws.H"
 
 #include "NSRDS0.H"
 #include "NSRDS1.H"
@@ -53,6 +54,8 @@ namespace Foam
     makeFunction1s(sphericalTensor);
     makeFunction1s(symmTensor);
     makeFunction1s(tensor);
+
+    makeFunction1Type(AntoineYaws, scalar);
 
     makeFunction1Type(NSRDS0, scalar);
     makeFunction1Type(NSRDS1, scalar);

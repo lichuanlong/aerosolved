@@ -1,0 +1,54 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      Water.dispersed;
+}
+
+dimensions      [0 0 0 0 0 0 0];
+
+internalField   uniform 1e-4;
+
+boundaryField
+{
+    inlet
+    {
+        type        fixedValue;
+        value       $internalField;
+    }
+
+    outlet
+    {
+        type        mixedAbsorbing;
+        value       $internalField;
+    }
+
+    lower
+    {
+        type        mixedAbsorbing;
+        value       $internalField;
+    }
+
+    walls
+    {
+        type        mixedAbsorbing;
+        value       $internalField;
+    }
+
+    rear
+    {
+        type        wedge;
+    }
+
+    front
+    {
+        type        wedge;
+    }
+
+    axis
+    {
+        type        empty;
+    }
+}

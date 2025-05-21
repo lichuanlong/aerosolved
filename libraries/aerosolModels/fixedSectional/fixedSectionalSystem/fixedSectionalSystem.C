@@ -58,7 +58,7 @@ fixedSectionalSystem::fixedSectionalSystem
             "M",
             aerosol.mesh().time().timeName(),
             aerosol.mesh(),
-            IOobject::READ_IF_PRESENT,
+            IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
         aerosol.mesh(),
@@ -140,48 +140,86 @@ tmp<volScalarField> fixedSectionalSystem::d(const label i) const
     return td;
 }
 
+tmp<scalarField> fixedSectionalSystem::d
+(
+    const label i,
+    const label patchi
+) const
+{
+    const scalarField rhol(aerosol_.thermo().thermoDisp().rho(patchi));
+
+    tmp<scalarField> td
+    (
+        new scalarField(distribution_()[i].d(rhol))
+    );
+
+    return td;
+}
+
 tmp<volScalarField> fixedSectionalSystem::meanDiameter
 (
     const scalar p,
     const scalar q
 ) const
 {
+    // We have to make sure that all boundaries of all M fields are properly
+    // initialized. This requires a const cast.
+
+    sectionalDistribution& dist =
+        const_cast<sectionalDistribution&>(distribution_());
+
+    dist.correctBoundaryConditions();
+
     const volScalarField d0(d(0));
 
     const dimensionedScalar zeroM("M", M_.dimensions(), 0.0);
+    const volScalarField& M0 = dist[0].M();
 
-    tmp<volScalarField> tdp
-    (
-        new volScalarField
-        (
-            "dp",
-            Foam::pow(d0,p)*max(distribution_()[0].M(), zeroM)
-        )
-    );
-
-    tmp<volScalarField> tdq
-    (
-        new volScalarField
-        (
-            "dq",
-            Foam::pow(d0,q)*max(distribution_()[0].M(), zeroM)
-        )
-    );
-
-    volScalarField& dp = tdp.ref();
-    volScalarField& dq = tdq.ref();
+    volScalarField dp(Foam::pow(d0,p)*M0);
+    volScalarField dq(Foam::pow(d0,q)*M0);
 
     for (label i = 1; i < distribution_->size(); i++)
     {
         const volScalarField di(d(i));
+        const volScalarField& Mi = dist[i].M();
 
-        dp += Foam::pow(di,p)*max(distribution_()[i].M(), zeroM);
-        dq += Foam::pow(di,q)*max(distribution_()[i].M(), zeroM);
+        dp += Foam::pow(di,p)*Mi;
+        dq += Foam::pow(di,q)*Mi;
     }
 
-    const dimensionedScalar smalldq("d", dq.dimensions(), SMALL);
+    dp.max(dimensionedScalar("d", dp.dimensions(), 0.0));
+    dq.max(dimensionedScalar("d", dq.dimensions(), SMALL));
 
-    return Foam::pow(dp/max(dq,smalldq), 1.0/(p-q));
+    return Foam::pow(dp/dq, 1.0/(p-q));
+}
+
+tmp<scalarField> fixedSectionalSystem::meanDiameter
+(
+    const scalar p,
+    const scalar q,
+    const label patchi
+) const
+{
+    const sectionalDistribution& dist = distribution_();
+
+    const scalarField d0(d(0,patchi));
+
+    const scalarField& M0 = dist[0].M().boundaryField()[patchi];
+
+    scalarField dp(Foam::pow(d0,p)*M0);
+    scalarField dq(Foam::pow(d0,q)*M0);
+
+    for (label i = 1; i < distribution_->size(); i++)
+    {
+        const scalarField di(d(i,patchi));
+
+        const scalarField& Mi = dist[i].M().boundaryField()[patchi];
+
+        dp += Foam::pow(di,p)*Mi;
+        dq += Foam::pow(di,q)*Mi;
+    }
+
+    return Foam::pow(max(dp,0.0)/max(dq,SMALL), 1.0/(p-q));
 }
 
 tmp<volScalarField> fixedSectionalSystem::medianDiameter
@@ -293,7 +331,12 @@ void fixedSectionalSystem::rescale()
         sections[i].M().max(0.0);
     }
 
-    const volScalarField alphaFromM(this->alpha());
+    volScalarField alphaFromM(this->alpha());
+
+    alphaFromM.max
+    (
+        dimensionedScalar("alpha", alphaFromM.dimensions(), sqrt(VSMALL))
+    );
 
     const volScalarField alphaFromZ(aerosol_.thermo().sumZ());
 
@@ -306,27 +349,80 @@ void fixedSectionalSystem::rescale()
         << ", " << gMax(delta)
         << endl;
 
-    const dimensionedScalar smallAlpha
+    // Correct using a mass weighting, such that most correction is in the
+    // sections with most mass. This is of the form:
+    //
+    // M_{i,new} = M_i*(1 + corr*x_i*M_i)
+    //
+    // in which the corr factor can be inferred from the requirement that
+    //
+    // sum_i M_{i,new}*x_i = sum_j Z_j
+    //
+
+    volScalarField alphaFromMSqr
     (
-        "alpha",
-        alphaFromM.dimensions(),
-        VSMALL
+        IOobject
+        (
+            "alphaFromMSqr",
+            aerosol_.mesh().time().timeName(),
+            aerosol_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        aerosol_.mesh(),
+        dimensionedScalar("alphaFromMSqr", dimless, 0)
     );
 
     forAll(sections, i)
     {
-        sections[i].M() *= alphaFromZ/max(alphaFromM, smallAlpha);
-        sections[i].M().correctBoundaryConditions();
+        alphaFromMSqr += sqr(sections[i].xd()*sections[i].M());
     }
 
-    if (M_.headerOk())
-    {
-        M_ *= 0.0;
+    alphaFromMSqr.max
+    (
+        dimensionedScalar("alphaSqr", alphaFromMSqr.dimensions(), VSMALL)
+    );
 
-        forAll(sections, i)
-        {
-            M_ += sections[i].M();
-        }
+    const volScalarField corr
+    (
+        (alphaFromZ - alphaFromM)/alphaFromMSqr
+    );
+
+    forAll(sections, i)
+    {
+        sections[i].M() *= (1.0 + corr*sections[i].xd()*sections[i].M());
+    }
+
+    // Finally, linearly scale to assure positivity and correct BCs
+
+    forAll(sections, i)
+    {
+        sections[i].M().max(0.0);
+    }
+
+    alphaFromM = this->alpha();
+
+    alphaFromM.max
+    (
+        dimensionedScalar("alpha", alphaFromM.dimensions(), sqrt(VSMALL))
+    );
+
+    forAll(sections, i)
+    {
+        sections[i].M() *= alphaFromZ/alphaFromM;
+        sections[i].M().correctBoundaryConditions();
+    }
+}
+
+void fixedSectionalSystem::collect()
+{
+    PtrList<section>& sections = distribution_->sections();
+
+    M_ == dimensionedScalar(M_.dimensions(), Zero);
+
+    forAll(sections, i)
+    {
+        M_ += sections[i].M();
     }
 }
 

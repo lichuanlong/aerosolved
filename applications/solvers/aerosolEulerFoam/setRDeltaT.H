@@ -71,17 +71,20 @@ License
 
     // Drift time scale
     {
-        const surfaceScalarField& phiInertial = aerosol->phiInertial();
-        const surfaceScalarField& phiBrownian = aerosol->phiBrownian();
+        const surfaceScalarField& phiInertial = aerosol->drift().phiInertial();
 
-        surfaceScalarField phiDrift(phi+phiInertial+phiBrownian);
+        surfaceScalarField phiDrift(phi+phiInertial);
+
         rDriftDeltaT.ref() =
         (
             fvc::surfaceSum(mag(phiDrift))()()
-            /((2*maxCo)*mesh.V()*rho())
+          / ((2*maxCo)*mesh.V()*rho())
         );
+
         // Limit the largest time scale
+
         rDriftDeltaT.max(1/maxDeltaT);
+
         Info<< "    Drift       = "
             << 1/gMax(rDriftDeltaT.primitiveField()) << ", "
             << 1/gMin(rDriftDeltaT.primitiveField()) << endl;

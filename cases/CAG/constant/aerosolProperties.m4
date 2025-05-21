@@ -44,12 +44,9 @@ submodels
 {
     condensation
     {
-        type        coupled;
+        type                coupled;
 
-        activityCoeff
-        {
-            type    constant;
-        }
+        KelvinEffect        true;
 
         heatOfVaporization
         {
@@ -72,17 +69,17 @@ submodels
 
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        none;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        none;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        none;
         }

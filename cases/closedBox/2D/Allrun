@@ -1,0 +1,63 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../../scripts/AeroSolvedRunFunctions
+
+checkPython3
+
+# Mesh properties
+
+W=0.135     # Width of the domain
+H=0.135     # Height of the domain
+D=0.02      # Width of the inlet
+ND=16       # Number of cells at the inlet
+GX=2        # Horizontal grading factor
+GY=2        # Horizontal grading factor
+
+# Compute mesh variables
+
+MATH="import math as m"
+
+WH=$(echo "$MATH; print($W/2.0)" | python3)
+DH=$(echo "$MATH; print($D/2.0)" | python3)
+
+GXi=$(echo "$MATH; print(1.0/$GX)" | python3)
+GYi=$(echo "$MATH; print(1.0/$GY)" | python3)
+
+DD=$(echo "$MATH; print($D/$ND)" | python3)
+
+DWH=$(echo "$MATH; print($WH-$DH)" | python3)
+QX=$(echo "$MATH; print(($DWH-$GX*$DD)/($DWH-$DD))" | python3)
+NDW=$(echo "$MATH; print( int(round(m.log($GXi)/m.log($QX)+1)) )" | python3)
+
+QY=$(echo "$MATH; print(($H-$DD)/($H-$GY*$DD))" | python3)
+NY=$(echo "$MATH; print( int(round(m.log($GY)/m.log($QY)+1)) )" | python3)
+
+B=$(echo "$MATH; print($H/100.0)" | python3)
+
+VARS="\
+    -DVARH=$H \
+    -DVARB=$B \
+    -DVARDH=$DH \
+    -DVARWH=$WH \
+    -DVARNY=$NY \
+    -DVARNDW=$NDW \
+    -DVARND=$ND \
+    -DVARNY=$NY \
+    -DVARGX=$GX \
+    -DVARGXi=$GXi \
+    -DVARGY=$GY \
+    -DVARGYi=$GYi \
+    "
+
+setMacros "$VARS"
+
+cp -r 0.org 0
+
+runApplication blockMesh
+
+runApplication decomposePar
+
+runParallel $(getApplication)

@@ -15,8 +15,9 @@ boundaryField
 {
     inlet
     {
-        type        fixedValue;
+        type        saturatedMixtureFlow;
         value       $internalField;
+        #include    "SMF.txt"
     }
 
     outlet

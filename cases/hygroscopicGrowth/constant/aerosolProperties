@@ -1,0 +1,68 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      aerosolProperties;
+}
+
+aerosolModel    twoMomentLogNormalAnalytical;
+
+diameter
+{
+    min     1E-9;
+    max     1E-2;
+}
+
+twoMomentLogNormalAnalyticalCoeffs
+{
+    sigma   1.33;
+}
+
+submodels
+{
+    condensation
+    {
+        type            coupled;
+
+        heatOfVaporization
+        {
+            active          false;
+            limit           true;
+            maxDeltaTemp    1.0;
+        }
+    }
+
+    nucleation
+    {
+        type        none;
+    }
+
+    coalescence
+    {
+        type        none;
+    }
+
+    driftFluxModel
+    {
+        continuousDiffusion
+        {
+            type        HirschfelderCurtiss;
+        }
+
+        dispersedDiffusion
+        {
+            type        StokesEinstein;
+        }
+
+        dispersedInertialDrift
+        {
+            type        fullStokes;
+            tolerance   1E-6;
+            maxIter     3;
+            VMax        0.01;
+        }
+    }
+}
+

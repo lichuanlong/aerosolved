@@ -1,0 +1,13 @@
+quality     0.01;
+
+alphaCont
+{
+    Air     1.0;
+}
+
+alphaDisp
+{
+    PG      0.4;
+    VG      0.4;
+    Water   0.2;
+}

@@ -70,7 +70,10 @@ public:
     // Member Functions
 
         //- Correct the aerosol model
-        virtual void correctModel();
+        virtual void correct();
+
+        //- Correct the aerosol model
+        virtual void correctDriftFlux();
 
         //- Solution step before the mass fraction solution
         virtual void solvePre();
@@ -89,6 +92,14 @@ public:
         (
             const scalar p,
             const scalar q
+        ) const;
+
+        //- Moment p and q ratio mean diameter on the given patch
+        virtual tmp<scalarField> meanDiameter
+        (
+            const scalar p,
+            const scalar q,
+            const label patchi
         ) const;
 
         //- Moment p median diameter

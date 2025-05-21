@@ -80,6 +80,13 @@ protected:
 
     //- Protected Member Functions
 
+        //- Diameter of average mass, directly calculated from principle
+        //  variables and used by other diameter functions
+        tmp<volScalarField> dm() const;
+
+        //- Diameter of average mass for the given patch
+        tmp<scalarField> dm(const label patchi) const;
+
         //- Update the source terms
         void updateSources();
 
@@ -111,7 +118,10 @@ public:
     // Member Functions
 
         //- Correct the aerosol model
-        virtual void correctModel();
+        virtual void correct();
+
+        //- Correct the drift flux model
+        virtual void correctDriftFlux();
 
         //- Solution step before the mass fraction solution
         virtual void solvePre();
@@ -125,8 +135,23 @@ public:
         //- Heat release rate
         virtual tmp<volScalarField> Qdot() const;
 
-        //- Moment p and q ratio mean diameter
+        //- Diameter moment p and q ratio mean diameter
         virtual tmp<volScalarField> meanDiameter
+        (
+            const scalar p,
+            const scalar q
+        ) const;
+
+        //- Moment p and q ratio mean diameter on the given patch
+        virtual tmp<scalarField> meanDiameter
+        (
+            const scalar p,
+            const scalar q,
+            const label patchi
+        ) const;
+
+        //- Gradient of diameter moment p and q ratio mean diameter
+        virtual tmp<volScalarField> meanGradDiameter
         (
             const scalar p,
             const scalar q

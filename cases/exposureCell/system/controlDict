@@ -1,0 +1,113 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+
+application     aerosolEulerFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         10;
+
+deltaT          1E-4;
+
+writeControl    adjustableRunTime;
+
+writeInterval   1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  8;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   10;
+
+runTimeModifiable yes;
+
+adjustTimeStep  yes;
+
+maxCo           0.5;
+
+maxDeltaT       1;
+
+libs            ("libcustomFunctions.so");
+
+functions
+{
+    dcm
+    {
+        type            countMeanDiameter;
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+    }
+
+    dropletFlux
+    {
+        type            sectionalFlux;
+        libs            ("libaerosolModels.so");
+        patches         (inlet outlet walls lower);
+        writeControl    writeTime;
+    }
+
+    massFlux
+    {
+        type            massFlux;
+        libs            ("libaerosolModels.so");
+        patches         (inlet outlet walls lower);
+        writeControl    writeTime;
+    }
+
+    Pe
+    {
+        type            sectionalPecletNumbers;
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+    }
+
+    meanPe
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        regionType      patch;
+        name            lower;
+
+        operation       areaAverage;
+
+        fields
+        (
+            Pe.01
+            Pe.02
+            Pe.03
+            Pe.04
+            Pe.05
+            Pe.06
+            Pe.07
+            Pe.08
+            Pe.09
+            Pe.10
+            Pe.11
+            Pe.12
+            Pe.13
+            Pe.14
+            Pe.15
+            Pe.16
+        );
+
+        writeFields     no;
+        log             no;
+    }
+}

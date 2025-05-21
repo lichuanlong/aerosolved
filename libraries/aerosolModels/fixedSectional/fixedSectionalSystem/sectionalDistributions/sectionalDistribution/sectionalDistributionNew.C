@@ -37,8 +37,7 @@ autoPtr<sectionalDistribution> sectionalDistribution::New
 
     Info<< "    Selecting sectional distribution type " << modelType << endl;
 
-    dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(modelType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {

@@ -49,10 +49,9 @@ The following sub-models are implemented in the aerosolModel class:
 * **coalescenceModel**. Provides models for the computation of the coalescence kernel. The coalescence kernel is provided in polynomial form, via the `rate(...)` member function which returns a `coaData` object 
 * **condensationModel**. Provides models for the computation of the condensation rate. The condensation rate source and sink coefficients are returned via the `rate(...)` member function using the `conData` object
 * **nucleationModel**. Provides models for the computation of the nucleation rate. The nucleation rate, size and composition are returned via the `rate(...)` member function using the `nucData` object
-* **driftFluxModel**. Is a simple container classes which computes the corrective drift flux and drift stress tensor, based on the following 'sub-sub-models':
-    - _BrownianModel_. Provides the Brownian diffusivity given a droplet size
-    - _diffusionModel_. Provides the vapor diffusivity for a given species index $j$
-    - _inertialModel_. Provides the inertial drift velocity given a size $d$. A size name is also provided, such that the drift velocity field can be stored and re-used for more advanced non-algebraic models
+* **continuousDiffusionModel** Provides the vapor diffusivity for a given species index $j$
+* **dispersedDiffusionModel** Provides the dispersed diffusivity given a droplet size
+* **dispersedInertialDriftModel** Provides the dispersed inertial drift velocity given a size $d$. A size name is also provided, such that the drift velocity field can be stored and re-used for more advanced non-algebraic models
 
 ### functionObjects
 
@@ -71,7 +70,7 @@ The aerosolModel class provides the following functionObjects, which can be conf
 
 The aerosolModel class provides the following derivedFvPatchFields, which can be used as boundary conditions:
 
-* **zeroGradientAbsorbingWall**: Provides a zero-gradient condition when evaluating the value and a zero-value condition when evaluating the surface-normal gradient. This is useful for capturing both inertial drift and diffusion deposition across a patch
+* **zeroGradientAbsorbingWall**: Provides a zero-gradient condition when evaluating the value and a zero-value condition when evaluating the surface-normal gradient. This is useful for capturing both dispersed inertial drift and dispersed diffusion deposition across a patch
 * **zeroGradientDepositionVelocity**: Provides a zero-gradient condition when the direction is wall-ward, and a zero-value condition when the direction if the velocity would be wall-outward
 * **saturatedMixture**: Provides a fixed-value boundary condition specifying a vapor mixture which is at thermodynamic equilibrium
 * **sectionalConstant**: Provides a boundary condition which specifies a section-independent number density while respecting the total dispersed mass fraction at the patch, for each $M_i$ field

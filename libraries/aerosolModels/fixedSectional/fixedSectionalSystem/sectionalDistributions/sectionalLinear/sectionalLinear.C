@@ -36,15 +36,9 @@ addToRunTimeSelectionTable(sectionalDistribution, sectionalLinear, dictionary);
 
 void sectionalLinear::update()
 {
-    #if OPENFOAM > 1712
-    const scalar yMin(dict().get<scalar>("yMin"));
-    const scalar yMax(dict().get<scalar>("yMax"));
-    const label N(dict().get<label>("N"));
-    #else
-    const scalar yMin(dict().lookupType<scalar>("yMin"));
-    const scalar yMax(dict().lookupType<scalar>("yMax"));
-    const label N(dict().lookupType<label>("N"));
-    #endif
+    const scalar yMin(readScalar(dict().lookup("yMin")));
+    const scalar yMax(readScalar(dict().lookup("yMax")));
+    const label N(readLabel(dict().lookup("N")));
 
     if (N < 1)
     {

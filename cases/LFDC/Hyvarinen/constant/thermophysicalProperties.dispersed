@@ -1,0 +1,66 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties.dispersed;
+}
+
+thermoType
+{
+    type            heAerosolRhoThermo;
+    mixture         aerosolPhase;
+    transport       const;
+    thermo          hConst;
+    energy          sensibleInternalEnergy;
+    equationOfState icoPolynomial;
+    specie          specie;
+}
+
+species
+{
+    Butanol
+    {
+        specie
+        {
+            molWeight   74.123;
+        }
+        equationOfState
+        {
+            rhoCoeffs<8>
+            (
+                1029.5
+               -0.75
+                0
+                0
+                0
+                0
+                0
+                0
+            );
+        }
+        thermodynamics
+        {
+            // Not relevant due to phase mixing
+
+            Cp          4000;
+            Hf          0;
+        }
+        transport
+        {
+            // Not relevant due to phase mixing
+
+            mu          1e-4;
+            Pr          1;
+        }
+        properties
+        {
+            sigma       polynomial
+            (
+                ( 48.32e-3  0)
+                (-8.181e-5  1)
+            );
+        }
+    }
+}

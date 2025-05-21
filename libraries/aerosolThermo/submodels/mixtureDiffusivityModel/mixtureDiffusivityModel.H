@@ -38,7 +38,7 @@ Provides the effective diffusivity of a species \f$j\f$ in the current mixture.
 namespace Foam
 {
 
-//Forward decleration
+//Forward declaration
 class aerosolThermo;
 
 /*---------------------------------------------------------------------------*\

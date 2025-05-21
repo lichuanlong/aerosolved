@@ -1,0 +1,26 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      VG.dispersed;
+}
+
+dimensions      [0 0 0 0 0 0 0];
+
+internalField   uniform 0.0005;
+
+boundaryField
+{
+    walls
+    {
+        type        mixedAbsorbing;
+        value       $internalField;
+    }
+
+    empties
+    {
+        type        empty;
+    }
+}

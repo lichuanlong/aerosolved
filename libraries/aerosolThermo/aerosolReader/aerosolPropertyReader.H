@@ -37,7 +37,9 @@ class aerosolPropertyReader
 :
     public aerosolReader
 {
+    // Private Member Data
 
+        //- List of properties
         HashPtrTable<Function1<scalar>, word> properties_;
 
     // Private Member Functions

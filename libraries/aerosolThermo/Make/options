@@ -1,17 +1,14 @@
-sinclude $(GENERAL_RULES)/module-path-user
-
-/* Failsafe - user location */
-ifeq (,$(strip $(FOAM_MODULE_LIBBIN)))
-    FOAM_MODULE_LIBBIN = $(FOAM_USER_LIBBIN)
-endif
-
 EXE_INC = \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/solidSpecie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
-    -I$(LIB_SRC)/finiteVolume/lnInclude
+    -I$(LIB_SRC)/thermoTools/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I../../thirdparty/xgboostpredictor-0.1.0/src \
+    -I../../thirdparty/rapidjson-1.1.0/include \
+    -std=c++17 -Wno-class-memaccess
 
 LIB_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
@@ -20,4 +17,5 @@ LIB_LIBS = \
     -lspecie \
     -lsolidSpecie \
     -lreactionThermophysicalModels \
+    -lthermoTools \
     -lfiniteVolume

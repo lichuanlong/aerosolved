@@ -1,0 +1,123 @@
+#!/bin/bash
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../scripts/AeroSolvedRunFunctions
+
+checkPython3
+
+# Parameters
+
+RINLET=1.5
+R=4.0
+T=1.0
+HALFANGLE=2.5
+HBL=0.4
+H=20.0
+HGAP=2.9
+
+DX=0.15
+DXBL=0.01
+DXINLET=0.2
+
+# Coordinates
+
+MATH="import math as m"
+
+MID=$(echo "$MATH; print($T*(1.0 - m.sqrt(2.0)/2.0))" | python3)
+
+Z0=0.0
+Z1=$HBL
+Z2=$(echo "$MATH; print($HGAP-$RINLET)" | python3)
+Z3=$HGAP
+Z4=$(echo "$MATH; print($Z3+$MID)" | python3)
+Z5=$(echo "$MATH; print($Z3+$T)" | python3)
+Z6=$H
+ZC0=$(echo "$MATH; print($Z5-m.sin(m.pi/8.0)*$T)" | python3)
+ZC1=$(echo "$MATH; print($Z5-m.cos(m.pi/8.0)*$T)" | python3)
+
+X0=0.0
+X1=$RINLET
+X2=$(echo "$MATH; print($X1+$MID)" | python3)
+X3=$(echo "$MATH; print($X1+$T)" | python3)
+X4=$R
+XC0=$(echo "$MATH; print($X3-m.cos(m.pi/8.0)*$T)" | python3)
+XC1=$(echo "$MATH; print($X3-m.sin(m.pi/8.0)*$T)" | python3)
+
+Y0=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$X0)" | python3)
+Y1=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$X1)" | python3)
+Y2=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$X2)" | python3)
+Y3=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$X3)" | python3)
+Y4=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$X4)" | python3)
+
+YC0=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$XC0)" | python3)
+YC1=$(echo "$MATH; print(m.sin($HALFANGLE/360.0*2.0*m.pi)*$XC1)" | python3)
+
+# Mesh sizes
+
+NX1=$(echo "$MATH; print(int(round($X3/$DX)))" | python3)
+NX2=$(echo "$MATH; print(int(round(($X4-$X3)/$DX)))" | python3)
+
+NZ1=$(echo "$MATH; print(int(round(($Z2-$Z1)/$DX)))" | python3)
+NZ2=$(echo "$MATH; print(int(round(($Z3-$Z2)/$DX)))" | python3)
+
+GBL=$(echo "$MATH; print($DX/$DXBL)" | python3)
+NBL=$(echo "$MATH; print(int(round(m.log($GBL)/m.log(($HBL-$DXBL)/($HBL-$DX))+1)))" | python3)
+
+GPIPE=$(echo "$MATH; print($DXINLET/$DX)" | python3)
+NPIPE=$(echo "$MATH; print(int(round(m.log($GPIPE)/m.log(($H-$Z5-$DX)/($H-$Z5-$DXINLET))+1)))" | python3)
+
+DXC=$(echo "$MATH; print(m.pi*$T/4.0/$NX1)" | python3)
+GPIPE2=$(echo "$MATH; print($GPIPE*($DX/$DXC)**1.5)" | python3)
+GOUTLET=$(echo "$MATH; print(($DX/$DXC)**1.5)" | python3)
+
+# Prepare blockMesh dictionary
+
+VARS=" \
+    -DVARX0=$X0 \
+    -DVARX1=$X1 \
+    -DVARX2=$X2 \
+    -DVARX3=$X3 \
+    -DVARX4=$X4 \
+    -DVARY0=$Y0 \
+    -DVARY1=$Y1 \
+    -DVARY2=$Y2 \
+    -DVARY3=$Y3 \
+    -DVARY4=$Y4 \
+    -DVARZ0=$Z0 \
+    -DVARZ1=$Z1 \
+    -DVARZ2=$Z2 \
+    -DVARZ3=$Z3 \
+    -DVARZ4=$Z4 \
+    -DVARZ5=$Z5 \
+    -DVARZ6=$Z6 \
+    -DVARXC0=$XC0 \
+    -DVARYC0=$YC0 \
+    -DVARZC0=$ZC0 \
+    -DVARXC1=$XC1 \
+    -DVARYC1=$YC1 \
+    -DVARZC1=$ZC1 \
+    -DVARNBL=$NBL \
+    -DVARNPIPE=$NPIPE \
+    -DVARNX1=$NX1 \
+    -DVARNX2=$NX2 \
+    -DVARNZ1=$NZ1 \
+    -DVARNZ2=$NZ2 \
+    -DVARGBL=$GBL \
+    -DVARGPIPE=$GPIPE \
+    -DVARGPIPE2=$GPIPE2 \
+    -DVARGOUTLET=$GOUTLET \
+    "
+
+m4 $VARS system/blockMeshDict.m4 > system/blockMeshDict
+
+cp -r 0.org 0
+
+runApplication blockMesh
+runApplication decomposePar
+
+runParallel $(getApplication)
+
+runApplication python3 plot.py
+

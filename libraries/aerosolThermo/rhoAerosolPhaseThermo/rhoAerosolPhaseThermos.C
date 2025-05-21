@@ -24,8 +24,8 @@ License
 #include "makeAerosolThermo.H"
 #include "addToRunTimeSelectionTable.H"
 
-#include "thermoPhysicsTypes.H"
 #include "dispersedThermoPhysicsTypes.H"
+#include "continuousThermoPhysicsTypes.H"
 #include "aerosolPhase.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -35,7 +35,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Continuous models
+// Continuous models, sensibleEnthalpy
 
 makeAerosolThermo
 (
@@ -44,7 +44,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    constGasEThermoPhysics
+    constGasHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -54,7 +54,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    gasEThermoPhysics
+    constGasEHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -64,7 +64,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    constIncompressibleGasEThermoPhysics
+    gasHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -74,7 +74,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    incompressibleGasEThermoPhysics
+    constIncompressibleGasHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -84,19 +84,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    icoPoly8EThermoPhysics
-);
-
-// Dispersed models
-
-makeAerosolThermo
-(
-    rhoThermo,
-    rhoAerosolPhaseThermo,
-    heAerosolRhoThermo,
-    heRhoThermo,
-    aerosolPhase,
-    constDispEThermoPhysics
+    constIncompressibleGasEHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -106,7 +94,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    dispEThermoPhysics
+    incompressibleGasHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -116,7 +104,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    constIncompressibleDispEThermoPhysics
+    icoPoly8HThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -126,7 +114,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    constIncompressibleFuncDispEThermoPhysics
+    icoPoly8PerfectGasHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -136,7 +124,7 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    constIncompressiblePoly8DispEThermoPhysics
+    icoPoly8RhoConstHThermoPhysicsAeroSolved
 );
 
 makeAerosolThermo
@@ -146,7 +134,273 @@ makeAerosolThermo
     heAerosolRhoThermo,
     heRhoThermo,
     aerosolPhase,
-    adiabaticDispEThermoPhysics
+    constAdiabaticFluidHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constAdiabaticFluidEHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constEHThermoPhysicsAeroSolved
+);
+
+// Continuous models, sensibleInternalEnergy
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constGasEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constGasHEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    gasEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressibleGasEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressibleGasHEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    incompressibleGasEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constAdiabaticFluidEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constAdiabaticFluidHEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constHEThermoPhysicsAeroSolved
+);
+
+// Dispersed models, sensibleEnthalpy
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constDispHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constDispEHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    dispHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressibleFuncDispHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressiblePoly8DispHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressiblePoly8DispEHThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    adiabaticDispHThermoPhysicsAeroSolved
+);
+
+// Dispersed models, sensibleInternalEnergy
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constDispEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constDispHEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    dispEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressiblePoly8DispEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    constIncompressiblePoly8DispHEThermoPhysicsAeroSolved
+);
+
+makeAerosolThermo
+(
+    rhoThermo,
+    rhoAerosolPhaseThermo,
+    heAerosolRhoThermo,
+    heRhoThermo,
+    aerosolPhase,
+    adiabaticDispEThermoPhysicsAeroSolved
 );
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
