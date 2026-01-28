@@ -50,7 +50,7 @@ protected:
     // Protected Member Functions
 
         //- File header information
-        virtual void writeFileHeader(Ostream& os) const;
+    virtual void writeFileHeader(Ostream& os) const;
 
 
 private:

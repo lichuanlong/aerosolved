@@ -1,5 +1,10 @@
 import numpy as np
 
+MPG = 76.094
+MVG = 92.09
+MWater = 18.0153
+MAir = 28.9596
+
 def psPG(T):
     return max(np.exp(212.8 - 15420/T - 28.109 * np.log(T) + 2.1564E-5*T**2), 0)
 
@@ -17,6 +22,9 @@ def psVG(T):
 
 def psWater(T):
     return max(np.exp(73.649 - 7258.2/T - 7.3037 * np.log(T) + 4.1653E-6*T**2), 0)
+
+def psAir(T):
+    return 0.0
 
 def rhoPGl(T):
     return max \
@@ -44,6 +52,9 @@ def rhoVGl(T):
 
 def rhoWaterl(T):
     return max(((3.280712e-05*T - 0.03440865)*T + 11.53645)*T -249.5258, 0)
+
+def rhoAirl(T):
+    return 0.0
 
 def rhoPGg(T):
     return 76.094/8.3144621/T*1E2
@@ -77,3 +88,5 @@ def muAirg(T):
     Ts = 170.672;
     return As*np.sqrt(T)/(1.0+Ts/T)
 
+def muButanol(T):
+    return 1.4083e-6*T**1.5/(T+70.22)

@@ -37,6 +37,11 @@ class coupledCondensation
 {
 private:
 
+    // Private data
+
+        //- Switch to turn on the Kelvin effect (defaults to false)
+        Switch KelvinEffect_;
+
     // Private member functions
 
         //- Disallow default bitwise copy construct
@@ -69,13 +74,17 @@ public:
             //- Compute the condensation rate coefficients
             virtual conData rate
             (
-                const scalar& p,
-                const scalar& T,
+                const scalar d,
+                const scalar p,
+                const scalar T,
                 const scalarList& Y,
                 const scalarList& Z,
                 const scalarList& pSat,
+                const scalarList& gamma,
                 const scalarList& D,
-                const scalarList& rhoCont
+                const scalarList& rhoCont,
+                const scalarList& rhoDisp,
+                const scalarList& sigma
             ) const;
 };
 

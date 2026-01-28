@@ -50,12 +50,12 @@ Foam::diffusivityModels::FullerSchettlerGiddings::FullerSchettlerGiddings
 
 Foam::diffusivityModels::FullerSchettlerGiddings::FullerSchettlerGiddings
 (
-    const FullerSchettlerGiddings& se
+    const FullerSchettlerGiddings& model
 )
 :
-    diffusivityModel(se),
-    Vdj_(se.Vdj_),
-    Vdk_(se.Vdk_)
+    diffusivityModel(model),
+    Vdj_(model.Vdj_),
+    Vdk_(model.Vdk_)
 {}
 
 

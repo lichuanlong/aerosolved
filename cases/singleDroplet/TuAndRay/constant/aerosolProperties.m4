@@ -44,14 +44,6 @@ submodels
     {
         type        coupled;
 
-        activityCoeff
-        {
-            type            Zhang;
-            firtSpecieName  Water;
-            C1              -0.3049;
-            C2              -0.8551;
-        }
-
         heatOfVaporization
         {
             active          false;
@@ -70,17 +62,17 @@ submodels
 
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        HirschfelderCurtiss;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        none;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        none;
         }

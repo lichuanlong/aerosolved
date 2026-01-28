@@ -1,0 +1,18 @@
+#!/bin/bash
+
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+. ../../scripts/AeroSolvedRunFunctions
+
+SIGMA=1.33
+CMD=1e-6
+
+runApplication blockMesh
+
+cp -r 0.org 0
+
+runApplication setLogNormal $SIGMA $CMD
+runApplication setSaturatedMixture
+runApplication $(getApplication)
+runApplication python3 plot.py

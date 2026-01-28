@@ -125,61 +125,6 @@ Foam::aerosolModel::outputProperties()
     return outputPropertiesPtr_();
 }
 
-inline const Foam::fv::convectionScheme<Foam::scalar>&
-Foam::aerosolModel::mvPhi() const
-{
-    return mvPhi_();
-}
-
-inline const Foam::fv::convectionScheme<Foam::scalar>&
-Foam::aerosolModel::mvPhiDrift() const
-{
-    return mvPhiDrift_();
-}
-
-inline const Foam::fv::convectionScheme<Foam::scalar>&
-Foam::aerosolModel::mvPhiInertial() const
-{
-    return mvPhiInertial_();
-}
-
-inline const Foam::fv::convectionScheme<Foam::scalar>&
-Foam::aerosolModel::mvPhiBrownian() const
-{
-    return mvPhiBrownian_();
-}
-
-inline const Foam::surfaceScalarField& Foam::aerosolModel::phiDrift() const
-{
-    return phiDrift_;
-}
-
-inline const Foam::volSymmTensorField& Foam::aerosolModel::tauDrift() const
-{
-    return tauDrift_;
-}
-
-inline const Foam::surfaceScalarField& Foam::aerosolModel::phiInertial() const
-{
-    return phiInertial_;
-}
-
-inline const Foam::surfaceScalarField& Foam::aerosolModel::phiBrownian() const
-{
-    return phiBrownian_;
-}
-
-inline const Foam::volScalarField& Foam::aerosolModel::DDisp() const
-{
-    return DDisp_;
-}
-
-inline const Foam::PtrList<Foam::volScalarField>&
-Foam::aerosolModel::DCont() const
-{
-    return DCont_;
-}
-
 inline const Foam::PtrList<Foam::surfaceScalarField>&
 Foam::aerosolModel::phiEff() const
 {

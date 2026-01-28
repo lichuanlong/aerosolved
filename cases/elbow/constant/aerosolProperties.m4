@@ -17,7 +17,7 @@ diameter
 
 twoMomentLogNormalAnalyticalCoeffs
 {
-    sigma   4.0;
+    sigma   0.5;
 }
 
 fixedSectionalCoeffs
@@ -26,7 +26,7 @@ fixedSectionalCoeffs
     {
         type    logarithmic;
         yMin    1E-24;
-        yMax    1E-7;
+        yMax    1E-10;
         N       16;
     }
 
@@ -59,22 +59,21 @@ submodels
 
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        none;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        StokesEinstein;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        VARINERTIALMODEL;
             tolerance   1E-6;
             maxIter     3;
-            VMax        10.0;
         }
     }
 }

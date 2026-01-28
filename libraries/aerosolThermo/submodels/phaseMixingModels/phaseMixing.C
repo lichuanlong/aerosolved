@@ -40,22 +40,22 @@ phaseMixing::phaseMixing
     viscosity_ =
         phaseMixingModel::New
         (
-            thermo,
-            word(thermo.subDict("phaseMixing").lookup("viscosity"))
+            word(thermo.subDict("phaseMixing").lookup("viscosity")),
+            thermo
         );
 
     conductivity_ =
         phaseMixingModel::New
         (
-            thermo,
-            word(thermo.subDict("phaseMixing").lookup("conductivity"))
+            word(thermo.subDict("phaseMixing").lookup("conductivity")),
+            thermo
         );
 
     heatCapacity_ =
         phaseMixingModel::New
         (
-            thermo,
-            word(thermo.subDict("phaseMixing").lookup("heatCapacity"))
+            word(thermo.subDict("phaseMixing").lookup("heatCapacity")),
+            thermo
         );
 }
 

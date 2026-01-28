@@ -49,12 +49,10 @@ These variables have a local scope in YEqn.H, which is part of the top-level aer
 
 * `mut`: turbulent viscosity [kg/m/s]
 * `mvPhi`: reference to the multi-variate convection scheme relating to flux `phi`
-* `mvPhiBrownian`: reference to the multi-variate convection scheme relating to flux `phiBrownian`
-* `mvPhiDrift`: reference to the multi-variate convection scheme relating to flux `phiDrift`
+* `mvPhiCorr`: reference to the multi-variate convection scheme relating to flux `phiCorr`
 * `mvPhiInertial`: reference to the multi-variate convection scheme relating to flux `phiInertial`
-* `phiBrownian`: reference to the Brownian (additional) drift flux field [kg/s]
-* `phiDrift`: reference the corrective drift flux field, corresponding to $\mathbf{V}_d$ [kg/s]
-* `phiInertial`: reference to the inertial drift flux field [kg/s]
+* `phiCorr`: reference the corrective drift flux field, corresponding to $\mathbf{V}_d$ [kg/s]
+* `phiInertial`: reference to the dispersed inertial drift flux field [kg/s]
 * `Yt`: sum of all the mass fractions
 
 ## aerosolModel library
@@ -69,18 +67,20 @@ The following key variables are protected inside the aerosolModel class:
 * `dMin_`: minimum allowable diameter
 * `drift_`: pointer to the driftFluxModel object
 * `mesh_`: const reference to the fvMesh object
-* `mvPhi_`:  multi-variate convection scheme relating to the mixture flux
-* `mvPhiBrownian_`: multi-variate convection scheme relating to the Brownian (additional) drift flux
-* `mvPhiDrift_`: multi-variate convection scheme relating to the corrective flux
-* `mvPhiInertial_`: multi-variate convection scheme relating to the inertial drift flux
 * `nucleation_`: pointer to the nucleationModel object
-* `phiBrownian_`: Brownian (additional) drift flux field [kg/s]
-* `phiDrift_`: corrective drift flux field, corresponding to $\mathbf{V}_d$ [kg/s]
 * `phiEff_`: list of effective particle number flux fields [#/s]
-* `phiInertial_`: inertial drift flux field [kg/s]
-* `tauDrift_`: mixture drift stress tensor [kg/m/s<sup>2</sup>]
 * `thermo_`: aerosolThermo object
 * `turbulencePtr_`: pointer to the compressibleTurbulenceModel object (set externally by the top-level solver)
+
+### driftFluxModel library
+
+The following key variables are protected inside the driftFluxModel class:
+
+* `mvPhi_`:  multi-variate convection scheme relating to the mixture flux
+* `mvPhiCorr_`: multi-variate convection scheme relating to the corrective flux
+* `mvPhiInertial_`: multi-variate convection scheme relating to the dispersed inertial drift flux
+* `phiCorr_`: corrective drift flux field, corresponding to $\mathbf{V}_d$ [kg/s]
+* `phiInertial_`: dispersed inertial drift flux field [kg/s]
 
 ## aerosolThermo library
 

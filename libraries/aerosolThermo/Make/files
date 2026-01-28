@@ -10,13 +10,27 @@ submodels/phaseMixingModels/dispersedPhase/dispersedPhase.C
 
 submodels/phaseMixingModels/phaseMixing.C
 
+submodels/componentMixingModels/componentMixingModel/componentMixingModel.C
+submodels/componentMixingModels/componentMixingModel/componentMixingModelNew.C
+
+submodels/componentMixingModels/defaultComponentMixing/defaultComponentMixing.C
+submodels/componentMixingModels/WilkeWassiljewaComponentMixing/WilkeWassiljewaComponentMixing.C
+
+submodels/componentMixingModels/componentMixing.C
+
 submodels/mixtureDiffusivityModel/diffusivityModels/diffusivityModel/diffusivityModel.C
 submodels/mixtureDiffusivityModel/diffusivityModels/diffusivityModel/diffusivityModelNew.C
 
-submodels/mixtureDiffusivityModel/diffusivityModels/function/function.C
+submodels/mixtureDiffusivityModel/diffusivityModels/functionDiffusivityModel/functionDiffusivityModel.C
 submodels/mixtureDiffusivityModel/diffusivityModels/FullerSchettlerGiddings/FullerSchettlerGiddings.C
 
 submodels/mixtureDiffusivityModel/mixtureDiffusivityModel.C
+
+submodels/activityCoeffModels/activityCoeffModel/activityCoeffModel.C
+submodels/activityCoeffModels/activityCoeffModel/activityCoeffModelNew.C
+submodels/activityCoeffModels/constantActivityCoeff/constantActivityCoeff.C
+submodels/activityCoeffModels/Zhang/Zhang.C
+submodels/activityCoeffModels/noActivityCoeff/noActivityCoeff.C
 
 aerosolReader/aerosolPropertyReader.C
 aerosolReader/aerosolReader.C
@@ -27,5 +41,6 @@ rhoAerosolPhaseThermo/rhoAerosolPhaseThermos.C
 aerosolThermo.C
 
 functionObjects/thermoField/thermoField.C
+functionObjects/activityCoeff/activityCoeff.C
 
-LIB = $(FOAM_MODULE_LIBBIN)/libaerosolThermophysicalModels
+LIB = $(FOAM_USER_LIBBIN)/libaerosolThermophysicalModels

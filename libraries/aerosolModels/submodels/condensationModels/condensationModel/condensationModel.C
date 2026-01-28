@@ -39,15 +39,8 @@ condensationModel::condensationModel
     const dictionary& dict
 )
 :
-    aerosolSubModelBase(aerosol, dict, typeName, modelType),
-    activity_()
-{
-    if (modelType != "none")
-    {
-        activity_ =
-            activityCoeffModel::New(aerosol, dict.subDict("activityCoeff"));
-    }
-}
+    aerosolSubModelBase(aerosol, dict, typeName, modelType)
+{}
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 

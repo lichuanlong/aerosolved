@@ -69,17 +69,17 @@ submodels
 
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        none;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        none;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        none;
         }

@@ -1,0 +1,129 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+
+application     aerosolEulerFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         1;
+
+deltaT          1e-2;
+
+writeControl    adjustableRunTime;
+
+writeInterval   0.1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  8;
+
+writeCompression no;
+
+timeFormat      general;
+
+timePrecision   10;
+
+runTimeModifiable yes;
+
+adjustTimeStep  no;
+
+maxCo           0.1;
+
+maxDeltaT       0.01;
+
+libs            ("libcustomFunctions.so");
+
+functions
+{
+    dcm
+    {
+        type            countMeanDiameter;
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+    }
+
+    masses
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        writeControl    timeStep;
+        writeInterval   1;
+        writeFields     false;
+        log             false;
+
+        operation       weightedVolIntegrate;
+
+        weightField     rho;        
+
+        fields
+        (
+            Water1.continuous
+            Water2.continuous
+            Water3.continuous
+
+            Water1.dispersed
+            Water2.dispersed
+            Water3.dispersed
+
+            M
+        );
+    }
+
+    totalMass
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        writeControl    timeStep;
+        writeInterval   1;
+        writeFields     false;
+        log             false;
+
+        operation       volIntegrate;
+
+        fields
+        (
+            rho
+        );
+    }
+
+    S.Water1
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         Water1;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    S.Water2
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         Water2;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    S.Water3
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         Water3;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+}

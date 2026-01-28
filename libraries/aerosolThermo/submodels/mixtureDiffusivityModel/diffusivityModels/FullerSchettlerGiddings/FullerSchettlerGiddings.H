@@ -69,7 +69,7 @@ public:
         );
 
         //- Copy constructor
-        FullerSchettlerGiddings(const FullerSchettlerGiddings& se);
+        FullerSchettlerGiddings(const FullerSchettlerGiddings& model);
 
         //- Construct and return a clone
         virtual tmp<diffusivityModel> clone() const

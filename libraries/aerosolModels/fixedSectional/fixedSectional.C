@@ -37,39 +37,64 @@ namespace aerosolModels
 
 void Foam::aerosolModels::fixedSectional::updateDrift()
 {
-    phiInertial_ *= 0.0;
-    phiBrownian_ *= 0.0;
-    DDisp_ *= 0.0;
+    surfaceScalarField& phiInertial = drift_->phiInertial();
+    volScalarField& DDisp = drift_->DDisp();
+    surfaceScalarField& phiCorrDiff = drift_->phiCorrDiff();
+    volVectorField& Ur = drift_->Ur();
 
-    const volScalarField alpha(max(system_->alpha(), residualAlpha_));
+    phiInertial *= 0.0;
+    DDisp *= 0.0;
+    phiCorrDiff *= 0.0;
+    Ur *= 0.0;
 
-    if (this->drift().inertial().type() != "none")
+    const volScalarField alpha(system_->alpha());
+    const volScalarField& rho = this->rho();
+
+    // Reconstruct the inertial drift of mass fraction from the sectional
+    // inertial drifts
+
+    if (this->drift().dispInertialDrift().type() != "none")
     {
-        const volScalarField& rho = this->rho();
+        volScalarField alpha
+        (
+            IOobject
+            (
+                "alpha",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("alpha", dimless, 0)
+        );
 
         forAll(system_->distribution(), i)
         {
             const word sectionName(system_->distribution()[i].sectionName());
 
-            surfaceScalarField& phiInertiali =
-                system_->distribution()[i].phiInertial();
-
             const volScalarField& Mi = system_->distribution()[i].M();
 
             const volScalarField d(system_->d(i));
 
-            phiInertiali = fvc::flux
+            const volVectorField& Vi =
+                this->drift().dispInertialDrift().V(d, sectionName);
+
+            surfaceScalarField& phiInertiali =
+                system_->distribution()[i].phiInertial();
+
+            phiInertiali = fvc::flux(rho*Vi);
+
+            const volScalarField alphai
             (
-                this->drift().inertial().V(d, sectionName)*rho
+                system_->distribution()[i].xd()
+              * Mi
             );
 
-            phiInertial_ +=
-                system_->distribution()[i].xd()
-              * phiInertiali
-              * linearInterpolate(Mi);
+            Ur += Vi*alphai;
+            alpha += alphai;
         }
 
-        phiInertial_ /= linearInterpolate(alpha);
+        Ur /= max(alpha, residualAlpha_);
+        phiInertial = fvc::flux(rho*Ur);
     }
     else
     {
@@ -79,72 +104,55 @@ void Foam::aerosolModels::fixedSectional::updateDrift()
         }
     }
 
-    if (this->drift().Brownian().type() != "none")
+    // Reconstruct the diffusivity of mass fraction from the sectional
+    // diffusivities
+
+    if (this->drift().dispDiff().type() != "none")
     {
-        const volScalarField& rho = this->rho();
-
-        tmp<volVectorField> tUDiff
+        volScalarField alpha
         (
-            new volVectorField
+            IOobject
             (
-                IOobject
-                (
-                    "UDiff",
-                    mesh_.time().timeName(),
-                    mesh_,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh_,
-                dimensionedVector("UDiff", dimVelocity, vector::zero)
-            )
+                "alpha",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("alpha", dimless, 0)
         );
-
-        volVectorField& UDiff = tUDiff.ref();
 
         forAll(system_->distribution(), i)
         {
-            surfaceScalarField& phiBrowniani =
-                system_->distribution()[i].phiBrownian();
-
             const volScalarField& Mi = system_->distribution()[i].M();
 
-            const volScalarField d(system_->d(i));
+            volScalarField& Di = system_->distribution()[i].D();
 
-            volScalarField& DDispi = system_->distribution()[i].D();
+            Di = this->drift().dispDiff().D(system_->d(i));
 
-            DDispi = this->drift().Brownian().D(d);
-
-            phiBrowniani = -fvc::snGrad(rho*DDispi)*mesh_.magSf();
-
-            UDiff +=
+            const volScalarField alphai
+            (
                 system_->distribution()[i].xd()
-              * DDispi
-              * fvc::grad(Mi);
+              * Mi
+            );
 
-            phiBrownian_ +=
-                system_->distribution()[i].xd()
-              * phiBrowniani
-              * linearInterpolate(Mi);
+            DDisp += Di*alphai;
+            alpha += alphai;
         }
 
-        const scalar delta(gAverage(Foam::pow(mesh_.V().field(), 1.0/3.0)));
+        DDisp /= max(alpha, residualAlpha_);
 
-        const dimensionedScalar smallGradAlpha
-        (
-            "grad(alpha)",
-            alpha.dimensions()/dimLength,
-            residualAlpha_.value()/delta
-        );
+        forAll(system_->distribution(), i)
+        {
+            const volScalarField& Di = system_->distribution()[i].D();
+            const volScalarField& Mi = system_->distribution()[i].M();
 
-        const volScalarField magGradAlpha
-        (
-            max(mag(fvc::grad(alpha)), smallGradAlpha)
-        );
+            phiCorrDiff +=
+                linearInterpolate(rho*Di)*system_->distribution()[i].xd()
+              * fvc::snGrad(Mi/max(alpha, residualAlpha_))
+              * mesh_.magSf();
+        }
 
-        DDisp_ = mag(UDiff)/magGradAlpha;
-
-        phiBrownian_ /= linearInterpolate(alpha);
+        phiCorrDiff += linearInterpolate(DDisp)*fvc::snGrad(rho)*mesh_.magSf();
     }
     else
     {
@@ -162,81 +170,55 @@ void Foam::aerosolModels::fixedSectional::solveSpatial()
     const volScalarField& rho = this->rho();
 
     const surfaceScalarField& phi = this->phi();
+    const surfaceScalarField& phiCorr = drift_->phiCorr();
 
-    // Compute the relative and corrective sectional fluxes
-
-    PtrList<surfaceScalarField> phiRelM(system_->distribution().size());
-
-    surfaceScalarField phiCorr(phi*0.0);
-
-    forAll(system_->distribution(), i)
-    {
-        const volScalarField& Mi = system_->distribution()[i].M();
-
-        const surfaceScalarField& phiInertiali =
-            system_->distribution()[i].phiInertial();
-
-        const surfaceScalarField& phiBrowniani =
-            system_->distribution()[i].phiBrownian();
-
-        const surfaceScalarField phiReli
-        (
-            phiInertiali
-          + phiBrowniani
-          - phiInertial_
-          - phiBrownian_
-        );
-
-        tmp<fv::convectionScheme<scalar>> convPhiReli
-        (
-            fv::convectionScheme<Foam::scalar>::New
-            (
-                mesh_,
-                phiReli,
-                mesh_.divScheme("div(mvConv)")
-            )
-        );
-
-        phiRelM.set
-        (
-            i,
-            new surfaceScalarField(convPhiReli->flux(phiReli, Mi))
-        );
-
-        phiCorr -= system_->distribution()[i].xd()*phiRelM[i];
-    }
-
-    phiCorr /= max(linearInterpolate(system_->alpha()), SMALL);
+    const fv::convectionScheme<scalar>& mvPhi = drift_->mvPhi();
+    const fv::convectionScheme<scalar>& mvPhiCorr = drift_->mvPhiCorr();
 
     // Solve the system of equations
+
+    const volScalarField mut(turbulence().mut());
 
     forAll(system_->distribution(), i)
     {
         volScalarField& Mi = system_->distribution()[i].M();
 
-        const surfaceScalarField phiCorrM(phiCorr*linearInterpolate(Mi));
+        const volScalarField& Di = system_->distribution()[i].D();
 
-        const volScalarField D
+        // Correction term to account for the fact that diffusion is
+        // proportional to number concentration per unit volume, not per unit
+        // mass
+
+        const surfaceScalarField phiCorrDiff
         (
-            rho*system_->distribution()[i].D()
-          + turbulence().mut()
+            linearInterpolate(Di)*fvc::snGrad(rho)*mesh_.magSf()
         );
 
         // TODO: is creation here really a good idea?
         fv::options& fvOptions(fv::options::New(mesh_));
 
-	// Number concentration Equation
+        // Dispersed inertial drift and dispersed diffusive drift
+
+        const surfaceScalarField& phiInertiali =
+            system_->distribution()[i].phiInertial();
+
+        fvScalarMatrix drift
+        (
+            fvm::div(phiInertiali, Mi, "div(mvConv)")
+          - fvm::laplacian(mut+rho*Di, Mi, "laplacian(mut+rho*D,M)")
+          - fvm::div(phiCorrDiff, Mi, "div(mvConv)")
+        );
+
+        // Number concentration equation
+
         fvScalarMatrix MEqn
         (
             fvm::ddt(rho, Mi)
-          + mvPhi_->fvmDiv(phi, Mi)
-          + mvPhiInertial_->fvmDiv(phiInertial_, Mi)
-          + mvPhiBrownian_->fvmDiv(phiBrownian_, Mi)
-          - mvPhiDrift_->fvmDiv(phiDrift_, Mi)
-          + fvc::div(phiRelM[i]+phiCorrM)
+          + mvPhi.fvmDiv(phi, Mi)
+          + drift
           ==
-            fvm::laplacian(D, Mi,"laplacian(D,Mi)")
-          + fvOptions(rho, Mi)
+            fvOptions(rho, Mi)
+          + mvPhiCorr.fvmDiv(phiCorr, Mi)
         );
 
         MEqn.relax();
@@ -249,10 +231,15 @@ void Foam::aerosolModels::fixedSectional::solveSpatial()
 
         Mi.max(0.0);
 
-        phiEff_[i] = MEqn.flux() + phiRelM[i] + phiCorrM;
+        phiEff_[i] = MEqn.flux();
     }
 
-    system_->rescale();
+    if (rescale_)
+    {
+        system_->rescale();
+    }
+
+    system_->collect();
 }
 
 void Foam::aerosolModels::fixedSectional::solveInternal()
@@ -287,7 +274,10 @@ void Foam::aerosolModels::fixedSectional::solveInternal()
     PtrList<volScalarField>& Z = thermo_.Z();
 
     PtrList<scalarField> pSat(thermo_.pSat(activeSpecies));
+    PtrList<scalarField> gamma(thermo_.activity().gamma(activeSpecies));
     PtrList<scalarField> D(thermo_.diffusivity().Deff());
+    PtrList<scalarField> sigma(thermo_.sigma(activeSpecies));
+    PtrList<scalarField> rhoDisp(thermo_.rhoDisp(activeSpecies));
 
     const sectionalDistribution& dist = system_->distribution();
     sectionalInterpolation& interp = system_->interpolation();
@@ -301,9 +291,6 @@ void Foam::aerosolModels::fixedSectional::solveInternal()
 
     if (nucleation_->modelType() != "none")
     {
-        PtrList<scalarField> rhoDisp(thermo_.rhoDisp(activeSpecies));
-        PtrList<scalarField> sigma(thermo_.sigma(activeSpecies));
-
         forAll(rho, celli)
         {
             const nucData ndata
@@ -314,6 +301,7 @@ void Foam::aerosolModels::fixedSectional::solveInternal()
                     T[celli],
                     entryList(Y,celli),
                     entryList(pSat,celli),
+                    entryList(gamma,celli),
                     entryList(D,celli),
                     entryList(rhoDisp,celli),
                     entryList(sigma,celli)
@@ -360,13 +348,17 @@ void Foam::aerosolModels::fixedSectional::solveInternal()
             (
                 condensation_->rate
                 (
+                    dcm[celli],
                     p[celli],
                     T[celli],
                     entryList(Y,celli),
                     entryList(Z,celli),
                     entryList(pSat,celli),
+                    entryList(gamma,celli),
                     entryList(D,celli),
-                    entryList(rhoCont,celli)
+                    entryList(rhoCont,celli),
+                    entryList(rhoDisp,celli),
+                    entryList(sigma,celli)
                 )
             );
 
@@ -595,11 +587,10 @@ Foam::aerosolModels::fixedSectional::fixedSectional
         mesh,
         dimensionedScalar("J", dimless/dimVolume/dimTime, 0)
     ),
-    I_(thermo_.activeSpecies().size())
+    I_(thermo_.activeSpecies().size()),
+    rescale_(coeffs_.lookupOrDefault<Switch>("rescale", true))
 {
-    system_.set(
-        new fixedSectionalSystem(*this, coeffs())
-    );
+    system_.reset(new fixedSectionalSystem(*this, coeffs()));
 
     const speciesTable& activeSpecies = thermo_.activeSpecies();
 
@@ -630,7 +621,7 @@ Foam::aerosolModels::fixedSectional::fixedSectional
     {
         const section& sec = system_->distribution()[i];
 
-        fields_.add(sec.M());
+        drift_->fields().add(sec.M());
 
         mesh.setFluxRequired(sec.M().name());
 
@@ -663,8 +654,11 @@ Foam::aerosolModels::fixedSectional::~fixedSectional()
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-void Foam::aerosolModels::fixedSectional::correctModel()
+void Foam::aerosolModels::fixedSectional::correct()
 {
+    // Only the M-field must be initialized at startup. Sources are corrected in
+    // the solvePost step directly
+
     forAll(system_->distribution(), i)
     {
         section& sec = system_->distribution()[i];
@@ -673,8 +667,15 @@ void Foam::aerosolModels::fixedSectional::correctModel()
         {
             sec.initM(word(coeffs().lookup("initFromPatch")));
         }
-    }
 
+        // needed for restart 
+        sec.M().correctBoundaryConditions();
+    }
+}
+
+void Foam::aerosolModels::fixedSectional::correctDriftFlux()
+{
+    drift_->correct();
     updateDrift();
 }
 
@@ -733,6 +734,17 @@ Foam::aerosolModels::fixedSectional::meanDiameter
     dimensionedScalar dMax("d", dimLength, dMax_);
 
     return max(min(system_->meanDiameter(p,q),dMax),dMin);
+}
+
+Foam::tmp<Foam::scalarField>
+Foam::aerosolModels::fixedSectional::meanDiameter
+(
+    const scalar p,
+    const scalar q,
+    const label patchi
+) const
+{
+    return max(min(system_->meanDiameter(p,q,patchi),dMax_),dMin_);
 }
 
 Foam::tmp<Foam::volScalarField>

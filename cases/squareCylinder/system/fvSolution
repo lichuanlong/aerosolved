@@ -38,7 +38,7 @@ solvers
         $U;
     }
 
-    Y
+    "(Y|YFinal)"
     {
         solver          PBiCGStab;
         preconditioner  DILU;

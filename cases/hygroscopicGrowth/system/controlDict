@@ -1,0 +1,174 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+
+application     aerosolEulerFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         1;
+
+deltaT          1e-2;
+
+writeControl    adjustableRunTime;
+
+writeInterval   0.1;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  8;
+
+writeCompression no;
+
+timeFormat      general;
+
+timePrecision   10;
+
+runTimeModifiable yes;
+
+adjustTimeStep  no;
+
+maxCo           0.1;
+
+maxDeltaT       0.01;
+
+libs            ("libcustomFunctions.so");
+
+functions
+{
+    dcm
+    {
+        type            countMeanDiameter;
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+    }
+
+    CMD
+    {
+        type            medianDiameter;
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+        p               0.0;
+        result          CMD;
+    }
+
+    masses
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        writeControl    timeStep;
+        writeInterval   1;
+        writeFields     false;
+        log             false;
+
+        operation       weightedVolIntegrate;
+
+        weightField     rho;        
+
+        fields
+        (
+            PG.continuous
+            VG.continuous
+            Water.continuous
+
+            PG.dispersed
+            VG.dispersed
+            Water.dispersed
+
+            M
+        );
+    }
+
+    totalMass
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        writeControl    timeStep;
+        writeInterval   1;
+        writeFields     false;
+        log             false;
+
+        operation       volIntegrate;
+
+        fields
+        (
+            rho
+        );
+    }
+
+    S.PG
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         PG;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    S.VG
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         VG;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    S.Water
+    {
+        type            saturation;
+        libs            ("libaerosolModels.so");
+        species         Water;
+        writeControl    writeTime;
+        executeControl  writeTime;
+    }
+
+    meanDiameters
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+
+        writeControl    timeStep;
+        writeInterval   1;
+        writeFields     false;
+        log             false;
+
+        operation       volAverage;
+
+        fields
+        (
+            dcm
+            CMD
+        );
+    }
+
+    massFlux
+    {
+        type            massFlux;
+        libs            ("libaerosolModels.so");
+
+
+        writeControl    timeStep;
+        writeInterval   1;
+        writeFields     false;
+        log             false;
+
+        patches
+        (
+            walls
+        );
+    }
+}

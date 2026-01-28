@@ -58,6 +58,7 @@ class coupledNucleation
             const scalar& p,
             const scalarList& pVap,
             const scalarList& pSat,
+            const scalarList& gamma,
             const scalarList& D,
             const scalarList& v
         ) const;
@@ -96,6 +97,7 @@ public:
                 const scalar& T,
                 const scalarList& Y,
                 const scalarList& pSat,
+                const scalarList& gamma,
                 const scalarList& D,
                 const scalarList& rhoDisp,
                 const scalarList& sigma

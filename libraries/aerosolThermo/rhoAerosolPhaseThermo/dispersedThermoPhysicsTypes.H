@@ -24,6 +24,7 @@ License
 #include "perfectFluid.H"
 #include "adiabaticPerfectFluid.H"
 #include "rhoConst.H"
+#include "eConstThermo.H"
 #include "hConstThermo.H"
 #include "janafThermo.H"
 #include "icoFunction.H"
@@ -55,7 +56,20 @@ namespace Foam
             >,
             sensibleEnthalpy
         >
-    > constDispHThermoPhysics;
+    > constDispHThermoPhysicsAeroSolved;
+
+    typedef
+    constTransport
+    <
+        species::thermo
+        <
+            eConstThermo
+            <
+                perfectFluid<specie>
+            >,
+            sensibleEnthalpy
+        >
+    > constDispEHThermoPhysicsAeroSolved;
 
     typedef
     sutherlandTransport
@@ -68,20 +82,7 @@ namespace Foam
             >,
             sensibleEnthalpy
         >
-    > dispHThermoPhysics;
-
-    typedef
-    constTransport
-    <
-        species::thermo
-        <
-            hConstThermo
-            <
-                rhoConst<specie>
-            >,
-            sensibleEnthalpy
-        >
-    > constIncompressibleDispHThermoPhysics;
+    > dispHThermoPhysicsAeroSolved;
 
     typedef
     constTransport
@@ -94,7 +95,20 @@ namespace Foam
             >,
             sensibleEnthalpy
         >
-    > constIncompressibleFuncDispHThermoPhysics;
+    > constIncompressibleFuncDispHThermoPhysicsAeroSolved;
+
+    typedef
+    constTransport
+    <
+        species::thermo
+        <
+            eConstThermo
+            <
+                icoFunction<specie>
+            >,
+            sensibleEnthalpy
+        >
+    > constIncompressibleFuncDispEHThermoPhysicsAeroSolved;
 
     typedef
     constTransport
@@ -107,7 +121,20 @@ namespace Foam
             >,
             sensibleEnthalpy
         >
-    > constIncompressiblePoly8DispHThermoPhysics;
+    > constIncompressiblePoly8DispHThermoPhysicsAeroSolved;
+
+    typedef
+    constTransport
+    <
+        species::thermo
+        <
+            eConstThermo
+            <
+                icoPolynomial<specie, 8>
+            >,
+            sensibleEnthalpy
+        >
+    > constIncompressiblePoly8DispEHThermoPhysicsAeroSolved;
 
     typedef
     sutherlandTransport
@@ -120,7 +147,7 @@ namespace Foam
             >,
             sensibleEnthalpy
         >
-    > adiabaticDispHThermoPhysics;
+    > adiabaticDispHThermoPhysicsAeroSolved;
 
     // thermo physics types based on sensibleInternalEnergy
 
@@ -129,13 +156,26 @@ namespace Foam
     <
         species::thermo
         <
+            eConstThermo
+            <
+                perfectFluid<specie>
+            >,
+            sensibleInternalEnergy
+        >
+    > constDispEThermoPhysicsAeroSolved;
+
+    typedef
+    constTransport
+    <
+        species::thermo
+        <
             hConstThermo
             <
                 perfectFluid<specie>
             >,
             sensibleInternalEnergy
         >
-    > constDispEThermoPhysics;
+    > constDispHEThermoPhysicsAeroSolved;
 
     typedef
     sutherlandTransport
@@ -148,20 +188,20 @@ namespace Foam
             >,
             sensibleInternalEnergy
         >
-    > dispEThermoPhysics;
+    > dispEThermoPhysicsAeroSolved;
 
     typedef
     constTransport
     <
         species::thermo
         <
-            hConstThermo
+            eConstThermo
             <
-                rhoConst<specie>
+                icoFunction<specie>
             >,
             sensibleInternalEnergy
         >
-    > constIncompressibleDispEThermoPhysics;
+    > constIncompressibleFuncDispEThermoPhysicsAeroSolved;
 
     typedef
     constTransport
@@ -174,7 +214,20 @@ namespace Foam
             >,
             sensibleInternalEnergy
         >
-    > constIncompressibleFuncDispEThermoPhysics;
+    > constIncompressibleFuncDispHEThermoPhysicsAeroSolved;
+
+    typedef
+    constTransport
+    <
+        species::thermo
+        <
+            eConstThermo
+            <
+                icoPolynomial<specie, 8>
+            >,
+            sensibleInternalEnergy
+        >
+    > constIncompressiblePoly8DispEThermoPhysicsAeroSolved;
 
     typedef
     constTransport
@@ -187,7 +240,7 @@ namespace Foam
             >,
             sensibleInternalEnergy
         >
-    > constIncompressiblePoly8DispEThermoPhysics;
+    > constIncompressiblePoly8DispHEThermoPhysicsAeroSolved;
 
     typedef
     sutherlandTransport
@@ -200,7 +253,7 @@ namespace Foam
             >,
             sensibleInternalEnergy
         >
-    > adiabaticDispEThermoPhysics;
+    > adiabaticDispEThermoPhysicsAeroSolved;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -18,6 +18,8 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "aerosolModel.H"
+#include "aerosolModelGitInfo.H"
+
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -32,6 +34,32 @@ const Foam::word Foam::aerosolModel::aerosolPropertiesName
     "aerosolProperties"
 );
 
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+void Foam::aerosolModel::versionInfo()
+{
+    Info<< endl;
+
+    Info<< "###############################################################################" << nl
+	    << "####                       Welcome to AeroSolved 2.1                       ####" << nl
+	    << "###############################################################################" << nl
+	    <<  nl
+	    << "Cite: " << nl
+	    << "Lucci F., Frederix E.M.A., Kuczaj A.K." << nl
+	    << "AeroSolved: Computational fluid dynamics modeling of" << nl
+	    << "multispecies aerosol flows with sectional and moment methods," << nl
+	    << "Journal of Aerosol Science, Volume 159, (2022)" << nl
+	    << "doi:10.1016/j.jaerosci.2021.105854" << nl
+	    << nl
+	    << "###############################################################################" << nl
+	    << nl;
+
+    gitInfo();
+
+	Info<< nl
+	    << "###############################################################################"
+        << nl << endl;
+}
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -75,128 +103,6 @@ Foam::aerosolModel::aerosolModel
       ? 0.0
       : readScalar(subDict("diameter").lookup("max"))
     ),
-    phiDrift_
-    (
-        IOobject
-        (
-            "phiDrift",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        fvc::flux
-        (
-            volVectorField
-            (
-                IOobject
-                (
-                    "dummy",
-                    mesh.time().timeName(),
-                    mesh
-                ),
-                mesh,
-                dimensionedVector
-                (
-                    "dummy",
-                    dimVelocity*dimDensity,
-                    vector::zero
-                )
-            )
-        )
-    ),
-    tauDrift_
-    (
-        IOobject
-        (
-            "tauDrift",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedSymmTensor
-        (
-            "tau",
-            dimMass/sqr(dimTime)/dimLength,
-            symmTensor::zero
-        )
-    ),
-    phiInertial_
-    (
-        IOobject
-        (
-            "phiInertial",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        fvc::flux
-        (
-            volVectorField
-            (
-                IOobject
-                (
-                    "dummy",
-                    mesh.time().timeName(),
-                    mesh
-                ),
-                mesh,
-                dimensionedVector
-                (
-                    "dummy",
-                    dimVelocity*dimDensity,
-                    vector::zero
-                )
-            )
-        )
-    ),
-    phiBrownian_
-    (
-        IOobject
-        (
-            "phiBrownian",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        fvc::flux
-        (
-            volVectorField
-            (
-                IOobject
-                (
-                    "dummy",
-                    mesh.time().timeName(),
-                    mesh
-                ),
-                mesh,
-                dimensionedVector
-                (
-                    "dummy",
-                    dimVelocity*dimDensity,
-                    vector::zero
-                )
-            )
-        )
-    ),
-    DDisp_
-    (
-        IOobject
-        (
-            "DDisp",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("D", dimArea/dimTime, 0.0)
-    ),
-    DCont_(thermo_.contSpecies().size()),
     residualAlpha_
     (
         "residualAlpha",
@@ -204,6 +110,8 @@ Foam::aerosolModel::aerosolModel
         coeffs_.lookupOrDefault<scalar>("residualAlpha", 1E-12)
     )
 {
+    versionInfo();
+
     read();
 
     if (!outputPropertiesPtr_.valid())
@@ -251,40 +159,7 @@ Foam::aerosolModel::aerosolModel
             );
     }
 
-    drift_.set(
-        new driftFluxModel(*this, subDict("submodels"))
-    );
-
-    forAll(thermo_.contSpecies(), j)
-    {
-        DCont_.set
-        (
-            j,
-            new volScalarField
-            (
-                IOobject
-                (
-                    IOobject::groupName("DCont", thermo_.contSpecies()[j]),
-                    mesh_.time().timeName(),
-                    mesh_,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh_,
-                dimensionedScalar("DCont", dimArea/dimTime, 0.0)
-            )
-        );
-    }
-
-    forAll(thermo_.contSpecies(), j)
-    {
-        fields_.add(thermo_.Y()[j]);
-    }
-
-    forAll(thermo_.dispSpecies(), j)
-    {
-        fields_.add(thermo_.Z()[j]);
-    }
+    drift_.reset(new driftFluxModel(*this, subDict("submodels")));
 }
 
 
@@ -300,86 +175,6 @@ Foam::aerosolModel::~aerosolModel()
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
-
-void Foam::aerosolModel::correct()
-{
-    correctModel();
-
-    if (this->drift().diffusion().type() != "none")
-    {
-        forAll(thermo_.contSpecies(), j)
-        {
-            DCont_[j] = this->drift().diffusion().D(j);
-        }
-    }
-    else
-    {
-        forAll(thermo_.contSpecies(), j)
-        {
-            DCont_[j] *= 0.0;
-        }
-    }
-
-    if
-    (
-        this->drift().diffusion().type() != "none"
-     || this->drift().Brownian().type() != "none"
-     || this->drift().inertial().type() != "none"
-    )
-    {
-        phiDrift_ = this->drift().phi
-        (
-            phiInertial_,
-            phiBrownian_,
-            DDisp_,
-            DCont_
-        );
-
-        tauDrift_ = this->drift().tau
-        (
-            phiInertial_,
-            phiBrownian_,
-            DDisp_,
-            DCont_
-        );
-    }
-
-    mvPhi_ =
-        fv::convectionScheme<Foam::scalar>::New
-        (
-            mesh_,
-            fields_,
-            this->phi(),
-            mesh_.divScheme("div(mvConv)")
-        );
-
-    mvPhiDrift_ =
-        fv::convectionScheme<Foam::scalar>::New
-        (
-            mesh_,
-            fields_,
-            phiDrift_,
-            mesh_.divScheme("div(mvConv)")
-        );
-
-    mvPhiInertial_ =
-        fv::convectionScheme<Foam::scalar>::New
-        (
-            mesh_,
-            fields_,
-            phiInertial_,
-            mesh_.divScheme("div(mvConv)")
-        );
-
-    mvPhiBrownian_ =
-        fv::convectionScheme<Foam::scalar>::New
-        (
-            mesh_,
-            fields_,
-            phiBrownian_,
-            mesh_.divScheme("div(mvConv)")
-        );
-}
 
 bool Foam::aerosolModel::read()
 {
@@ -409,7 +204,7 @@ Foam::tmp<Foam::scalarField> Foam::aerosolModel::getRDeltaT()
 
         if(!rDeltaT_.valid())
         {
-            rDeltaT_.set(new scalarField(rho.size()));
+            rDeltaT_.reset(new scalarField(rho.size()));
         }
 
         rDeltaT_() = 1.0/mesh_.time().deltaTValue();

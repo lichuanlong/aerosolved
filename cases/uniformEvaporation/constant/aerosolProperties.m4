@@ -44,11 +44,6 @@ submodels
     {
         type        coupled;
 
-        activityCoeff
-        {
-            type    constant;
-        }
-
         heatOfVaporization
         {
             active          false;
@@ -68,17 +63,17 @@ submodels
 
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        none;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        none;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        none;
         }

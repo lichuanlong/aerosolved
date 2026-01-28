@@ -9,3 +9,9 @@ wclean libraries/aerosolThermo
 wclean libraries/aerosolModels
 
 wclean applications/solvers/aerosolEulerFoam
+wclean applications/solvers/aerosolEulerFoam/aerosolBuoyantEulerFoam
+
+wclean applications/test/aerosolThermo
+
+wclean applications/utilities/setSaturatedMixture
+wclean applications/utilities/setLogNormal

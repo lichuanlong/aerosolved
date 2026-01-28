@@ -62,6 +62,9 @@ protected:
         //- File header information
         virtual void writeFileHeader(Ostream& os) const = 0;
 
+        //- File header information. Compatibility with later OF version
+        virtual void writeFileHeader(const label i);
+
 
 private:
 

@@ -1,0 +1,28 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      Water2.continuous;
+}
+
+dimensions      [0 0 0 0 0 0 0];
+
+internalField   uniform 0.0;
+
+boundaryField
+{
+    walls
+    {
+        type        saturatedMixture;
+        value       $internalField;
+
+        #include    "saturatedMixtureParams"
+    }
+
+    empties
+    {
+        type        empty;
+    }
+}

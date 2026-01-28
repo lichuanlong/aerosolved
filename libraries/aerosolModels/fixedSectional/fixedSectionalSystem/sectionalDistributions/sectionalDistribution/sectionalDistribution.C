@@ -71,6 +71,14 @@ word sectionalDistribution::sectionName(const label i) const
     return std::string(d-sectionName.length(), '0') + sectionName;
 }
 
+void sectionalDistribution::correctBoundaryConditions()
+{
+    forAll(*this, i)
+    {
+        this->operator[](i).M().correctBoundaryConditions();
+    }
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam

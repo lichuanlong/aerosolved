@@ -64,7 +64,7 @@ private:
         //- Sectional interpolation
         autoPtr<sectionalInterpolation> interpolation_;
 
-        //- Base sectional mass fraction field
+        //- Total number concentration field
         volScalarField M_;
 
         //- Table of sectional mass fraction fields for multivariate convection
@@ -145,11 +145,27 @@ public:
         //- Compute the sectional diameter
         virtual tmp<volScalarField> d(const label i) const;
 
+        //- Compute the sectional diameter at given patch
+        virtual tmp<scalarField> d
+        (
+            const label i,
+            const label patchi
+        ) const;
+
         //- Compute the mean diameter related to the moment p and q ratio
         virtual tmp<volScalarField> meanDiameter
         (
             const scalar p,
             const scalar q
+        ) const;
+
+        //- Compute the mean diameter related to the moment p and q ratio for
+        //  given patch
+        virtual tmp<scalarField> meanDiameter
+        (
+            const scalar p,
+            const scalar q,
+            const label patchi
         ) const;
 
         //- Comptue the median diameter related to the moment p
@@ -166,6 +182,9 @@ public:
 
         //- Rescale the sectional system
         virtual void rescale();
+
+        //- Collect all sections into the M field
+        virtual void collect();
 
         //- Generate coalescence pairs
         virtual void generateCoalescencePairs();

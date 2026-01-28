@@ -30,8 +30,7 @@ patch.
 #ifndef sectionalSubGridDepositionVelocityFvPatchVectorField_H
 #define sectionalSubGridDepositionVelocityFvPatchVectorField_H
 
-#include "fvPatchFields.H"
-#include "zeroGradientFvPatchFields.H"
+#include "subGridDepositionVelocityFvPatchVectorField.H"
 #include "fixedSectionalSystem.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -40,25 +39,13 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-   Class sectionalSubGridDepositionVelocityFvPatchVectorField Declaration
+    Class sectionalSubGridDepositionVelocityFvPatchVectorField Declaration
 \*---------------------------------------------------------------------------*/
 
 class sectionalSubGridDepositionVelocityFvPatchVectorField
 :
-    public zeroGradientFvPatchVectorField
+    public subGridDepositionVelocityFvPatchVectorField
 {
-    // Private data
-
-        //- Gravitational accelleration vector
-        vector g_;
-
-        //- Maximum number of Newton iterations
-        label maxIter_;
-
-        //- Newton iteration tolerance
-        scalar tolerance_;
-
-
     // Private member functions
 
         //- Find the section index to which this BC's field belongs to
@@ -131,6 +118,9 @@ public:
 
 
     // Member functions
+
+        //- Calculate the mean particle diameter at the patch from the section
+        virtual tmp<scalarField> d() const;
 
         //- Evaluate the patch field
         virtual void evaluate

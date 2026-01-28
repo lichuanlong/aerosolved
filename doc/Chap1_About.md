@@ -20,7 +20,7 @@ The main goal of AeroSolved is to offer a platform for the simulation of aerosol
 
 * **Aerosol formation** through supersaturation and subsequent nucleation
 * **Aerosol evolution** through condensation/evaporation and coalescence
-* **Aerosol deposition** due to Brownian motion or inertial drift
+* **Aerosol deposition** due to dispersed diffusion or dispersed inertial drift
 
 A key part of AeroSolved is that it models the particle size distribution, such that detailed information on particle size can be predicted locally. This is done using two independent methods:
 
@@ -49,7 +49,7 @@ This prepares the case, generates a mesh, and runs aerosolEulerFoam, the main so
 
 ## Dependencies
 
-AeroSolved has no special dependencies other than OpenFOAM. It is developed and tested against OpenFOAM-v1812 and OpenFOAM-v1906. Some cases require python3 and numpy for generating a post-processing plot (see the [attribution note](../AttributionNote)). The availability of python3 is tested in the Allrun scripts.
+AeroSolved has no special dependencies other than OpenFOAM. It is developed and tested against OpenFOAM-v1812. Some cases require python3 and numpy for generating a post-processing plot (see the [attribution note](../AttributionNote)). The availability of python3 is tested in the Allrun scripts.
 
 ## Documentation
 

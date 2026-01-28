@@ -43,6 +43,7 @@ Foam::aerosolThermo::aerosolThermo
     thermoDisp_(nullptr),
     diffusivity_(nullptr),
     phaseMix_(),
+    activity_(),
     species_(),
     activeSpecies_(),
     inactiveSpecies_(),
@@ -50,10 +51,8 @@ Foam::aerosolThermo::aerosolThermo
     inactiveSpeciesMap_(),
     contSpeciesMap_(),
     dispSpeciesMap_(),
-    inertSpecie_()
+    inertSpecie_(word(lookup("inertSpecie")))
 {
-    dictionary::readEntry("inertSpecie", inertSpecie_);
-
     // Create specific temperature fields
 
     {
@@ -99,25 +98,19 @@ Foam::aerosolThermo::aerosolThermo
 
     species_.transfer(s);
 
-    #if OPENFOAM > 1712
-    const wordList sActive(get<wordList>("activeSpecies"));
-    const wordList sInactive(get<wordList>("inactiveSpecies"));
-    #else
-    wordList sActive(lookupType<wordList>("activeSpecies"));
-    wordList sInactive(lookupType<wordList>("inactiveSpecies"));
-    #endif
+    wordList sActive(lookup("activeSpecies"));
+    wordList sInactive(lookup("inactiveSpecies"));
 
     forAll(species_, j)
     {
-        // if (sActive.found(species_[j]))
-        if (findIndex(sActive, species_[j]) != -1)
+        if (sActive.find(species_[j]) != -1)
         {
-            activeSpecies_.append(species_[j]);
+            activeSpecies_.appendUniq(species_[j]);
             activeSpeciesMap_.append(j);
         }
         else
         {
-            inactiveSpecies_.append(species_[j]);
+            inactiveSpecies_.appendUniq(species_[j]);
             inactiveSpeciesMap_.append(j);
         }
     }
@@ -164,11 +157,11 @@ Foam::aerosolThermo::aerosolThermo
         }
     }
 
-    phaseMix_.set(new phaseMixing(*this));
+    phaseMix_.reset(new phaseMixing(*this));
 
     correct();
 
-    diffusivity_.set(new mixtureDiffusivityModel(*this));
+    diffusivity_.reset(new mixtureDiffusivityModel(*this));
 
     // Print species arays
 
@@ -266,6 +259,13 @@ Foam::aerosolThermo::aerosolThermo
         fields_.add(this->Z()[j]);
         fieldsZ_.add(this->Z()[j]);
     }
+
+    // Set the activity coefficient model
+
+    activity_.reset
+    (
+        activityCoeffModel::New(*this).ptr()
+    );
 }
 
 
@@ -282,10 +282,12 @@ void Foam::aerosolThermo::correctThermo()
     thermoCont_->T() = T_;
     thermoCont_->he() = thermoCont_->he(p_, T_);
     thermoCont_->correct();
+    thermoCont_->correctMixing();
 
     thermoDisp_->T() = T_;
     thermoDisp_->he() = thermoDisp_->he(p_, T_);
     thermoDisp_->correct();
+    thermoDisp_->correctMixing();
 }
 
 
@@ -443,6 +445,22 @@ Foam::tmp<Foam::scalarField> Foam::aerosolThermo::rho
 }
 
 
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::rhoEoS
+(
+    const scalarField& p,
+    const scalarField& T,
+    const labelList& cells
+) const
+{
+    return
+        1.0
+      / (
+            sumY(cells)/thermoCont_->rhoEoS(p,T,cells)
+          + sumZ(cells)/thermoDisp_->rhoEoS(p,T,cells)
+        );
+}
+
+
 Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::Cp() const
 {
     return phaseMix_->heatCapacity().mix
@@ -465,6 +483,22 @@ Foam::tmp<Foam::scalarField> Foam::aerosolThermo::Cp
         thermoCont_->Cp(p, T, patchi),
         thermoDisp_->Cp(p, T, patchi),
         patchi
+    );
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::Cp
+(
+    const scalarField& p,
+    const scalarField& T,
+    const labelList& cells
+) const
+{
+    return phaseMix_->heatCapacity().mix
+    (
+        thermoCont_->Cp(p, T, cells),
+        thermoDisp_->Cp(p, T, cells),
+        cells
     );
 }
 
@@ -530,7 +564,9 @@ Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::lambda() const
 
     const volScalarField m(thermoCont_->WMix()*0.001/NA);
 
-    return thermoCont_->mu()/p_*Foam::sqrt(pi*kB*T_/(2*m));
+    return
+        thermoCont_->mu()
+      / p_*Foam::sqrt(pi*kB*T_/(2*m));
 }
 
 
@@ -603,11 +639,7 @@ Foam::tmp<Foam::scalarField> Foam::aerosolThermo::nu
 
 Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::kappa() const
 {
-    return phaseMix_->conductivity().mix
-    (
-        thermoCont_->kappa(),
-        thermoDisp_->kappa()
-    );
+    return Cp()*alpha();
 }
 
 
@@ -616,12 +648,10 @@ Foam::tmp<Foam::scalarField> Foam::aerosolThermo::kappa
     const label patchi
 ) const
 {
-    return phaseMix_->conductivity().mix
-    (
-        thermoCont_->kappa(patchi),
-        thermoDisp_->kappa(patchi),
-        patchi
-    );
+    const scalarField& pp = p_.boundaryField()[patchi];
+    const scalarField& Tp = T_.boundaryField()[patchi];
+
+    return Cp(pp, Tp, patchi)*alpha(patchi);
 }
 
 
@@ -630,11 +660,7 @@ Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::kappaEff
     const volScalarField& alphat
 ) const
 {
-    return phaseMix_->conductivity().mix
-    (
-        thermoCont_->kappaEff(alphat),
-        thermoDisp_->kappaEff(alphat)
-    );
+    return Cp()*(alpha() + alphat);
 }
 
 
@@ -644,12 +670,10 @@ Foam::tmp<Foam::scalarField> Foam::aerosolThermo::kappaEff
     const label patchi
 ) const
 {
-    return phaseMix_->conductivity().mix
-    (
-        thermoCont_->kappaEff(alphat, patchi),
-        thermoDisp_->kappaEff(alphat, patchi),
-        patchi
-    );
+    const scalarField& pp = p_.boundaryField()[patchi];
+    const scalarField& Tp = T_.boundaryField()[patchi];
+
+    return Cp(pp, Tp, patchi)*(alpha(patchi) + alphat);
 }
 
 
@@ -658,11 +682,7 @@ Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::alphaEff
     const volScalarField& alphat
 ) const
 {
-    return phaseMix_->conductivity().mix
-    (
-        thermoCont_->alphaEff(alphat),
-        thermoDisp_->alphaEff(alphat)
-    );
+    return CpByCpv()*(alpha() + alphat);
 }
 
 
@@ -672,12 +692,10 @@ Foam::tmp<Foam::scalarField> Foam::aerosolThermo::alphaEff
     const label patchi
 ) const
 {
-    return phaseMix_->conductivity().mix
-    (
-        thermoCont_->alphaEff(alphat, patchi),
-        thermoDisp_->alphaEff(alphat, patchi),
-        patchi
-    );
+    const scalarField& pp = p_.boundaryField()[patchi];
+    const scalarField& Tp = T_.boundaryField()[patchi];
+
+    return CpByCpv(pp, Tp, patchi)*(alpha(patchi) + alphat);
 }
 
 
@@ -829,6 +847,11 @@ Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::W() const
     return this->WMix();
 }
 
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::W(const label patchi) const
+{
+    return this->WMix(patchi);
+}
+
 Foam::tmp<Foam::volScalarField> Foam::aerosolThermo::alphahe() const
 {
     NotImplemented;
@@ -905,6 +928,22 @@ Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::pSat
 }
 
 
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::pSat
+(
+    const word speciesName
+)
+{
+    const scalarField& T = T_;
+
+    tmp<scalarField> pSat
+    (
+        new scalarField(thermoCont_->property(speciesName, "pSat").value(T))
+    );
+
+    return pSat;
+}
+
+
 Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::rhoDisp
 (
     const speciesTable& species
@@ -925,6 +964,61 @@ Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::rhoDisp
         {
             rhoDisp[j][celli] = comp.rho(j, p[celli], T[celli]);
         }
+    }
+
+    return rhoDisp;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::rhoDisp
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    tmp<scalarField> rhoDisp(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        rhoDisp.ref()[celli] =
+            comp.rho
+            (
+                dispSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return rhoDisp;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::rhoDisp
+(
+    const word speciesName,
+    const label patchi
+) const
+{
+    const scalarField& pp = p_.boundaryField()[patchi];
+    const scalarField& Tp = T_.boundaryField()[patchi];
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    tmp<scalarField> rhoDisp(new scalarField(pp.size(), 0.0));
+
+    forAll(pp, facei)
+    {
+        rhoDisp.ref()[facei] =
+            comp.rho
+            (
+                dispSpecies()[speciesName],
+                pp[facei],
+                Tp[facei]
+            );
     }
 
     return rhoDisp;
@@ -957,6 +1051,379 @@ Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::rhoCont
 }
 
 
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::rhoCont
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    tmp<scalarField> rhoCont(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        rhoCont.ref()[celli] =
+            comp.rho
+            (
+                contSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return rhoCont;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::rhoCont
+(
+    const word speciesName,
+    const label patchi
+) const
+{
+    const scalarField& pp = p_.boundaryField()[patchi];
+    const scalarField& Tp = T_.boundaryField()[patchi];
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    tmp<scalarField> rhoCont(new scalarField(pp.size(), 0.0));
+
+    forAll(pp, facei)
+    {
+        rhoCont.ref()[facei] =
+            comp.rho
+            (
+                contSpecies()[speciesName],
+                pp[facei],
+                Tp[facei]
+            );
+    }
+
+    return rhoCont;
+}
+
+
+Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::muDisp
+(
+    const speciesTable& species
+) const
+{
+    PtrList<scalarField> muDisp(species.size());
+
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    forAll(species, j)
+    {
+        muDisp.set(j, new scalarField(T.size(), 0.0));
+
+        forAll(T_, celli)
+        {
+            muDisp[j][celli] = comp.mu(j, p[celli], T[celli]);
+        }
+    }
+
+    return muDisp;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::muDisp
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    tmp<scalarField> muDisp(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        muDisp.ref()[celli] =
+            comp.mu
+            (
+                dispSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return muDisp;
+}
+
+
+Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::muCont
+(
+    const speciesTable& species
+) const
+{
+    PtrList<scalarField> muCont(species.size());
+
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    forAll(species, j)
+    {
+        muCont.set(j, new scalarField(T.size(), 0.0));
+
+        forAll(T_, celli)
+        {
+            muCont[j][celli] = comp.mu(j, p[celli], T[celli]);
+        }
+    }
+
+    return muCont;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::muCont
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    tmp<scalarField> muCont(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        muCont.ref()[celli] =
+            comp.mu
+            (
+                contSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return muCont;
+}
+
+
+Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::alphaDisp
+(
+    const speciesTable& species
+) const
+{
+    PtrList<scalarField> alphaDisp(species.size());
+
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    forAll(species, j)
+    {
+        alphaDisp.set(j, new scalarField(T.size(), 0.0));
+
+        forAll(T_, celli)
+        {
+            alphaDisp[j][celli] = comp.alphah(j, p[celli], T[celli]);
+        }
+    }
+
+    return alphaDisp;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::alphaDisp
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    tmp<scalarField> alphaDisp(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        alphaDisp.ref()[celli] =
+            comp.alphah
+            (
+                dispSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return alphaDisp;
+}
+
+
+Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::alphaCont
+(
+    const speciesTable& species
+) const
+{
+    PtrList<scalarField> alphaCont(species.size());
+
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    forAll(species, j)
+    {
+        alphaCont.set(j, new scalarField(T.size(), 0.0));
+
+        forAll(T_, celli)
+        {
+            alphaCont[j][celli] = comp.alphah(j, p[celli], T[celli]);
+        }
+    }
+
+    return alphaCont;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::alphaCont
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    tmp<scalarField> alphaCont(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        alphaCont.ref()[celli] =
+            comp.alphah
+            (
+                contSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return alphaCont;
+}
+
+
+Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::kappaDisp
+(
+    const speciesTable& species
+) const
+{
+    PtrList<scalarField> kappaDisp(species.size());
+
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    forAll(species, j)
+    {
+        kappaDisp.set(j, new scalarField(T.size(), 0.0));
+
+        forAll(T_, celli)
+        {
+            kappaDisp[j][celli] = comp.kappa(j, p[celli], T[celli]);
+        }
+    }
+
+    return kappaDisp;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::kappaDisp
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoDisp_->composition();
+
+    tmp<scalarField> kappaDisp(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        kappaDisp.ref()[celli] =
+            comp.kappa
+            (
+                dispSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return kappaDisp;
+}
+
+
+Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::kappaCont
+(
+    const speciesTable& species
+) const
+{
+    PtrList<scalarField> kappaCont(species.size());
+
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    forAll(species, j)
+    {
+        kappaCont.set(j, new scalarField(T.size(), 0.0));
+
+        forAll(T_, celli)
+        {
+            kappaCont[j][celli] = comp.kappa(j, p[celli], T[celli]);
+        }
+    }
+
+    return kappaCont;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::kappaCont
+(
+    const word speciesName
+) const
+{
+    const scalarField& T = T_;
+    const scalarField& p = p_;
+
+    const basicSpecieMixture& comp = thermoCont_->composition();
+
+    tmp<scalarField> kappaCont(new scalarField(T.size(), 0.0));
+
+    forAll(T_, celli)
+    {
+        kappaCont.ref()[celli] =
+            comp.kappa
+            (
+                contSpecies()[speciesName],
+                p[celli],
+                T[celli]
+            );
+    }
+
+    return kappaCont;
+}
+
+
 Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::sigma
 (
     const speciesTable& species
@@ -977,6 +1444,22 @@ Foam::PtrList<Foam::scalarField> Foam::aerosolThermo::sigma
             )
         );
     }
+
+    return sigma;
+}
+
+
+Foam::tmp<Foam::scalarField> Foam::aerosolThermo::sigma
+(
+    const word speciesName
+)
+{
+    const scalarField& T = T_;
+
+    tmp<scalarField> sigma
+    (
+        new scalarField(thermoDisp_->property(speciesName, "sigma").value(T))
+    );
 
     return sigma;
 }

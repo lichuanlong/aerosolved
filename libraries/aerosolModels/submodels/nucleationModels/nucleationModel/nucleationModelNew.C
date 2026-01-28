@@ -36,8 +36,7 @@ autoPtr<nucleationModel> nucleationModel::New
 
     Info<< "    Selecting nucleation model " << modelType << endl;
 
-    dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(modelType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {

@@ -1,0 +1,72 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      aerosolProperties;
+}
+
+aerosolModel    fixedSectional;
+
+diameter
+{
+    min     1E-9;
+    max     1E-2;
+}
+
+fixedSectionalCoeffs
+{
+    distribution
+    {
+        type    logarithmic;
+        yMin    1E-24;
+        yMax    1E-13;
+        N       10;
+    }
+
+    interpolation
+    {
+        type    twoMoment;
+    }
+
+    rescale     true;
+
+    initFromPatch top;
+}
+
+submodels
+{
+    condensation
+    {
+        type        none;
+    }
+
+    nucleation
+    {
+        type        none;
+    }
+
+    coalescence
+    {
+        type        none;
+    }
+
+    driftFluxModel
+    {
+        continuousDiffusion
+        {
+            type        HirschfelderCurtiss;
+        }
+
+        dispersedDiffusion
+        {
+            type        StokesEinstein;
+        }
+
+        dispersedInertialDrift
+        {
+            type        Manninen;
+        }
+    }
+}

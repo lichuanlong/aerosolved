@@ -26,3 +26,11 @@ phaseMixing
     conductivity    mass;
     heatCapacity    mass;
 }
+
+activityCoeff
+{
+    type            Zhang;
+    firtSpecieName  Water;
+    C1              -0.3049;
+    C2              -0.8551;
+}

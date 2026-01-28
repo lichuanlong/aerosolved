@@ -147,14 +147,7 @@ void Foam::twoMomentLogNormalFvPatchScalarField::updateCoeffs()
             alpha += thermo.Z()[j].boundaryField()[patch().index()];
         }
 
-        const scalar sigma
-        (
-            #if OPENFOAM > 1712
-            aerosol.coeffs().get<scalar>("sigma")
-            #else
-            aerosol.coeffs().lookupType<scalar>("sigma")
-            #endif
-        );
+        const scalar sigma(readScalar(aerosol.coeffs().lookup("sigma")));
 
         operator==
         (

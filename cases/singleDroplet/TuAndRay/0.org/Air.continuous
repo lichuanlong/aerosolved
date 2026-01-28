@@ -15,7 +15,6 @@ boundaryField
 {
     walls
     {
-        type            calculated;
-        value           uniform 1.0;
+        type            zeroGradient;
     }
 }

@@ -7,23 +7,56 @@ FoamFile
     object      aerosolProperties;
 }
 
-aerosolModel    none;
+aerosolModel    twoMomentLogNormalAnalytical;
+
+diameter
+{
+    min     1E-9;
+    max     1E-4;
+}
+
+twoMomentLogNormalAnalyticalCoeffs
+{
+    sigma   0.5;
+}
 
 submodels
 {
+    condensation
+    {
+        type            coupled;
+
+        KelvinEffect    false;
+
+        heatOfVaporization
+        {
+            active          false;
+        }
+    }
+
+    nucleation
+    {
+        type        none;
+    }
+
+    coalescence
+    {
+        type        none;
+    }
+
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        none;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        none;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        none;
         }

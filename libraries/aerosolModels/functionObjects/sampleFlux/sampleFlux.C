@@ -43,7 +43,11 @@ Foam::functionObjects::sampleFlux::sampleFlux
 )
 :
     fvMeshFunctionObject(name, runTime, dict),
-    logFiles(obr_, name, dict),
+    logFiles
+    (
+        obr_,
+        name
+    ),
     patchNames_
     (
         dict.lookupOrDefault<wordList>("patches", wordList(0))
@@ -120,6 +124,7 @@ bool Foam::functionObjects::sampleFlux::read(const dictionary& dict)
             forAll(names(), i)
             {
                 Info<< "    " << names()[i] << nl;
+
                 writeFileHeader(files(i));
             }
 
@@ -145,17 +150,13 @@ bool Foam::functionObjects::sampleFlux::execute()
 
 bool Foam::functionObjects::sampleFlux::write()
 {
-    // Not sure what this was supposed to have been,
-    // but does not compile with OpenFOAM-v2006
-#if 0
     if (Pstream::master())
     {
         forAll(names(), filei)
         {
-            writeTime(files(filei));
+            writeCurrentTime(files(filei));
         }
     }
-#endif
 
     forAll(fluxFieldNames_, fluxi)
     {
@@ -216,5 +217,9 @@ bool Foam::functionObjects::sampleFlux::write()
     return true;
 }
 
+void Foam::functionObjects::sampleFlux::writeFileHeader(const label i)
+{
+    writeFileHeader(files(i));
+}
 
 // ************************************************************************* //

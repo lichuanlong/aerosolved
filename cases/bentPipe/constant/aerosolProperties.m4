@@ -34,7 +34,7 @@ fixedSectionalCoeffs
         type    twoMoment;
     }
 
-    rescale     false;
+    rescale     true;
 
     initFromPatch inlet;
 }
@@ -58,17 +58,17 @@ submodels
 
     driftFluxModel
     {
-        diffusion
+        continuousDiffusion
         {
             type        none;
         }
 
-        Brownian
+        dispersedDiffusion
         {
             type        StokesEinstein;
         }
 
-        inertial
+        dispersedInertialDrift
         {
             type        VARINERTIALMODEL;
             tolerance   1E-6;

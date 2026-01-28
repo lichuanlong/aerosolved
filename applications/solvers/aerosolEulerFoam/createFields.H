@@ -104,18 +104,6 @@ volScalarField dpdt
 Info<< "Creating field kinetic energy K\n" << endl;
 volScalarField K("K", 0.5*magSqr(U));
 
-multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
-
-forAll(Y, i)
-{
-    fields.add(Y[i]);
-}
-
-forAll(Z, i)
-{
-    fields.add(Z[i]);
-}
-
 #include "createMRF.H"
 
 PtrList<surfaceScalarField> phiEffY(Y.size());
@@ -167,10 +155,26 @@ forAll(Z, j)
 
 scalar calcAerosolAfter=runTime.startTime().value();
 
-if(LTS && !pimple.frozenFlow())
+if (LTS && !pimple.frozenFlow())
 {
     calcAerosolAfter=readScalar(pimple.dict().lookup("calcAerosolAfter"));
 
     Info<< "Starting calculation of the aerosol after t = "
         << calcAerosolAfter << endl;
 }
+
+// Mixture drift stress tensor
+
+volSymmTensorField tauDrift
+(
+    IOobject
+    (
+        "tauDrift",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedSymmTensor("tauDrift", dimDensity*sqr(dimVelocity), Zero)
+);

@@ -40,7 +40,8 @@ boundaryField
 
     "wall.*"
     {
-        type        zeroGradient;
+        type        mixedAbsorbing;
+        value       $internalField;
     }
 
     front

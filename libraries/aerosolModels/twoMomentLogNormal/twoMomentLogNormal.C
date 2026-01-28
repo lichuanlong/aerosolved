@@ -35,6 +35,56 @@ namespace aerosolModels
 
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
+Foam::tmp<Foam::volScalarField>
+Foam::aerosolModels::twoMomentLogNormal::dm() const
+{
+    const scalar pi = constant::mathematical::pi;
+
+    const dimensionedScalar smallM("M", M_.dimensions(), SMALL);
+
+    const dimensionedScalar dMin("d", dimLength, dMin_);
+    const dimensionedScalar dMax("d", dimLength, dMax_);
+
+    return min
+    (
+        max
+        (
+            pow
+            (
+                6.0*thermo_.sumZ()
+              / (pi*thermo_.thermoDisp().rho()*max(M_,smallM)),
+                1.0/3.0
+            ),
+            dMin
+        ),
+        dMax
+    );
+}
+
+Foam::tmp<Foam::scalarField>
+Foam::aerosolModels::twoMomentLogNormal::dm(const label patchi) const
+{
+    const scalar pi = constant::mathematical::pi;
+
+    return min
+    (
+        max
+        (
+            pow
+            (
+                6.0*thermo_.sumZ(patchi)
+              / (
+                    pi*thermo_.thermoDisp().rho(patchi)
+                  * max(M_.boundaryField()[patchi],SMALL)
+                ),
+                1.0/3.0
+            ),
+            dMin_
+        ),
+        dMax_
+    );
+}
+
 void Foam::aerosolModels::twoMomentLogNormal::updateSources()
 {
     clearRates();
@@ -64,7 +114,10 @@ void Foam::aerosolModels::twoMomentLogNormal::updateSources()
     PtrList<volScalarField>& Z = thermo_.Z();
 
     PtrList<scalarField> pSat(thermo_.pSat(activeSpecies));
+    PtrList<scalarField> gamma(thermo_.activity().gamma(activeSpecies));
     PtrList<scalarField> D(thermo_.diffusivity().Deff());
+    PtrList<scalarField> sigma(thermo_.sigma(activeSpecies));
+    PtrList<scalarField> rhoDisp(thermo_.rhoDisp(activeSpecies));
 
     const scalarField CMD(this->medianDiameter(0));
     const scalarField rhol(thermo_.thermoDisp().rho());
@@ -73,9 +126,6 @@ void Foam::aerosolModels::twoMomentLogNormal::updateSources()
 
     if (nucleation_->modelType() != "none")
     {
-        PtrList<scalarField> rhoDisp(thermo_.rhoDisp(activeSpecies));
-        PtrList<scalarField> sigma(thermo_.sigma(activeSpecies));
-
         forAll(M, celli)
         {
             const nucData ndata
@@ -86,6 +136,7 @@ void Foam::aerosolModels::twoMomentLogNormal::updateSources()
                     T[celli],
                     entryList(Y,celli),
                     entryList(pSat,celli),
+                    entryList(gamma,celli),
                     entryList(D,celli),
                     entryList(rhoDisp,celli),
                     entryList(sigma,celli)
@@ -118,13 +169,17 @@ void Foam::aerosolModels::twoMomentLogNormal::updateSources()
             (
                 condensation_->rate
                 (
+                    dcm[celli],
                     p[celli],
                     T[celli],
                     entryList(Y,celli),
                     entryList(Z,celli),
                     entryList(pSat,celli),
+                    entryList(gamma,celli),
                     entryList(D,celli),
-                    entryList(rhoCont,celli)
+                    entryList(rhoCont,celli),
+                    entryList(rhoDisp,celli),
+                    entryList(sigma,celli)
                 )
             );
 
@@ -224,32 +279,43 @@ void Foam::aerosolModels::twoMomentLogNormal::updateSources()
 
 void Foam::aerosolModels::twoMomentLogNormal::updateDrift()
 {
-    if (this->drift().inertial().type() != "none")
-    {
-        const volScalarField& rho = this->rho();
+    surfaceScalarField& phiInertial = drift_->phiInertial();
+    volScalarField& DDisp = drift_->DDisp();
+    surfaceScalarField& phiCorrDiff = drift_->phiCorrDiff();
+    volVectorField& Ur = drift_->Ur();
 
-        phiInertial_ = fvc::flux
-        (
-            this->drift().inertial().V(this->meanDiameter(5.0,3.0)(), "d53")
-          * rho
-        );
+    const volScalarField& rho = this->rho();
+
+    if (this->drift().dispInertialDrift().type() != "none")
+    {
+        const volScalarField d(this->meanDiameter(5.0,3.0));
+
+        const volVectorField& V =
+            this->drift().dispInertialDrift().V(d, "d53");
+
+        Ur = V;
+
+        phiInertial = fvc::flux(rho*V);
     }
     else
     {
-        phiInertial_ *= 0.0;
+        Ur *= 0.0;
+
+        phiInertial *= 0.0;
     }
 
-    if (this->drift().Brownian().type() != "none")
+    if (this->drift().dispDiff().type() != "none")
     {
-        DDisp_ = this->drift().Brownian().D(this->meanDiameter(3.0,2.0)());
+        // For mass transport, base the diffusivity on the diameter related to
+        // grad(M_3) and grad(M_2)
 
-        const volScalarField& rho = this->rho();
-
-        phiBrownian_ = -fvc::snGrad(rho*DDisp_)*mesh_.magSf();
+        DDisp = this->drift().dispDiff().D(this->meanGradDiameter(3.0,2.0)());
+        phiCorrDiff = linearInterpolate(DDisp)*fvc::snGrad(rho)*mesh_.magSf();
     }
     else
     {
-        DDisp_ *= 0.0;
+        DDisp *= 0.0;
+        phiCorrDiff *= 0.0;
     }
 }
 
@@ -327,7 +393,7 @@ Foam::aerosolModels::twoMomentLogNormal::twoMomentLogNormal
         );
     }
 
-    fields_.add(M_);
+    drift_->fields().add(M_);
 
     mesh.setFluxRequired(M_.name());
 
@@ -361,9 +427,14 @@ Foam::aerosolModels::twoMomentLogNormal::~twoMomentLogNormal()
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-void Foam::aerosolModels::twoMomentLogNormal::correctModel()
+void Foam::aerosolModels::twoMomentLogNormal::correct()
 {
     updateSources();
+}
+
+void Foam::aerosolModels::twoMomentLogNormal::correctDriftFlux()
+{
+    drift_->correct();
     updateDrift();
 }
 
@@ -376,22 +447,54 @@ void Foam::aerosolModels::twoMomentLogNormal::solvePost()
 
     const surfaceScalarField& phi = this->phi();
 
-    const volScalarField D(turbulence().mut()+this->DDisp()*rho);
+    const surfaceScalarField& phiInertial = drift_->phiInertial();
+    const surfaceScalarField& phiCorr = drift_->phiCorr();
+
+    const fv::convectionScheme<scalar>& mvPhi = drift_->mvPhi();
+    const fv::convectionScheme<scalar>& mvPhiCorr = drift_->mvPhiCorr();
+    const fv::convectionScheme<scalar>& mvPhiInertial = drift_->mvPhiInertial();
+
+    const volScalarField mut(turbulence().mut());
+
+    // For number transport, base the diffusivity on the diameter related to
+    // grad(M_0) and grad(M_{-1})
+
+    const volScalarField D
+    (
+        this->drift().dispDiff().D(this->meanGradDiameter(0.0,-1.0)())
+    );
+
+    // Correction term to account for the fact that diffusion is proportional to
+    // number concentration per unit volume, not per unit mass
+
+    const surfaceScalarField phiCorrDiff
+    (
+        linearInterpolate(D)*fvc::snGrad(rho)*mesh_.magSf()
+    );
 
     fv::options& fvOptions(fv::options::New(mesh_));
+
+    // Dispersed inertial drift and dispersed diffusive drift
+
+    fvScalarMatrix drift
+    (
+        mvPhiInertial.fvmDiv(phiInertial, M_)
+      - fvm::laplacian(mut+rho*D, M_, "laplacian(mut+rho*D,M)")
+      - fvm::div(phiCorrDiff, M_, "div(mvConv)")
+    );
+
+    // Number concentration equation
 
     fvScalarMatrix MEqn
     (
         fvm::ddt(rho, M_)
-      + mvPhi_->fvmDiv(phi, M_)
-      + mvPhiInertial_->fvmDiv(phiInertial_, M_)
-      + mvPhiBrownian_->fvmDiv(phiBrownian_, M_)
-      - mvPhiDrift_->fvmDiv(phiDrift_, M_)
+      + mvPhi.fvmDiv(phi, M_)
+      + drift
       ==
-        fvm::laplacian(D, M_,"laplacian(D,M)")
-      + fvm::Su(J_, M_)
-      - fvm::Sp(f_*Foam::sqr(rho)*M_, M_)
+        fvm::Su(J_, M_)
+      - fvm::Sp(f_*sqr(rho)*M_, M_)
       + fvOptions(rho, M_)
+      + mvPhiCorr.fvmDiv(phiCorr, M_)
     );
 
     MEqn.relax();
@@ -458,13 +561,6 @@ Foam::aerosolModels::twoMomentLogNormal::meanDiameter
     const scalar q
 ) const
 {
-    const scalar pi = constant::mathematical::pi;
-
-    const volScalarField alpha(thermo_.sumZ());
-    const volScalarField rhol(thermo_.thermoDisp().rho());
-
-    const dimensionedScalar smallM("M", M_.dimensions(), SMALL);
-
     const dimensionedScalar dMin("d", dimLength, dMin_);
     const dimensionedScalar dMax("d", dimLength, dMax_);
 
@@ -472,7 +568,81 @@ Foam::aerosolModels::twoMomentLogNormal::meanDiameter
     (
         max
         (
-            Foam::pow(alpha*6.0/(pi*rhol*max(M_,smallM)), 1.0/3.0)
+            this->dm()
+          * Foam::exp(0.5*(p+q-3.0)*Foam::sqr(Foam::log(sigma_))),
+            dMin
+        ),
+        dMax
+    );
+}
+
+Foam::tmp<Foam::scalarField>
+Foam::aerosolModels::twoMomentLogNormal::meanDiameter
+(
+    const scalar p,
+    const scalar q,
+    const label patchi
+) const
+{
+    return min
+    (
+        max
+        (
+            this->dm(patchi)
+          * Foam::exp(0.5*(p+q-3.0)*Foam::sqr(Foam::log(sigma_))),
+            dMin_
+        ),
+        dMax_
+    );
+}
+
+Foam::tmp<Foam::volScalarField>
+Foam::aerosolModels::twoMomentLogNormal::meanGradDiameter
+(
+    const scalar p,
+    const scalar q
+) const
+{
+    const volScalarField dm(this->dm());
+
+    const volScalarField& rho = this->rho();
+
+    const volScalarField Mp(rho*M_*pow(dm,p));
+    const volScalarField Mq(rho*M_*pow(dm,q));
+
+    const dimensionedScalar smallGradMp
+    (
+        "smallMp",
+        Mp.dimensions()/dimLength,
+        SMALL
+    );
+
+    const dimensionedScalar smallGradMq
+    (
+        "smallMp",
+        Mq.dimensions()/dimLength,
+        SMALL
+    );
+
+    const dimensionedScalar dMin("d", dimLength, dMin_);
+    const dimensionedScalar dMax("d", dimLength, dMax_);
+
+    // In the limit of no gradients, the ratio of gradients turns to unity, so
+    // that the return value is likely to be clamped by dMax. Since this
+    // diameter is used in the computation of dispersed diffusivity, the
+    // dispersed diffusivity then becomes very small, which is numerically
+    // desirable.
+
+    return min
+    (
+        max
+        (
+            pow
+            (
+                max(mag(fvc::grad(Mp)), smallGradMp)
+              / max(mag(fvc::grad(Mq)), smallGradMq),
+                1.0/(p-q)
+            )
           * Foam::exp(0.5*(p+q-3.0)*Foam::sqr(Foam::log(sigma_))),
             dMin
         ),

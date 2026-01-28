@@ -84,19 +84,13 @@ public:
     // Member Functions
 
         //- Correct the aerosol model
-        virtual void correctModel();
-
-        //- Solution step before the mass fraction solution
-        virtual void solvePre();
+        virtual void correct();
 
         //- Solution step after the mass fraction solution
         virtual void solvePost();
 
         //- Right-hand side source term
         virtual tmp<fvScalarMatrix> R(const volScalarField& Y) const;
-
-        //- Heat release rate
-        virtual tmp<volScalarField> Qdot() const;
 
         //- Update properties from given dictionary
         virtual bool read();

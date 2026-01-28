@@ -40,9 +40,9 @@ $$
   \partial_t (Z_j \rho_m) + \nabla\cdot(Z_j\rho_m\mathbf{u}_m) + \nabla\cdot(Z_j\rho_m\mathbf{w}_j) = \nabla\cdot( D^{eff}_z \rho_m \nabla Z_j) +\nabla\cdot(Z_j \nabla(\rho_m D_z) ) +\Gamma_j + \nabla\cdot(Z_j\rho_m\mathbf{V}_d)
 $$
 
-with $\mathbf{w}_j$ being relative velocity between the dispersed phase of species $j$ and the total continuous phase; $D_z$, the equivalent Brownian diffusion coefficient for the dispersed phase mass fraction; and $D^{eff}_z$, the effective diffusion coefficient $D^{eff}_z = D_z + \nu^{turb}$.
+with $\mathbf{w}_j$ being relative velocity between the dispersed phase of species $j$ and the total continuous phase; $D_z$, the equivalent dispersed diffusion coefficient for the dispersed phase mass fraction; and $D^{eff}_z$, the effective diffusion coefficient $D^{eff}_z = D_z + \nu^{turb}$.
 
-The relative velocities $\mathbf{v}_j$ captures turbulent and molecular diffusion for the continuous phase and $\mathbf{w}_j$ captures  turbulent diffusion, Brownian diffusion, and inertial drift for the dispersed phase. The underlying models are commonly defined in terms of a relative motion with respect to the continuous 'carrier' phase. Therefore, $\mathbf{v}_j$ and $\mathbf{w}_j$ are also defined as relative velocities with respect to the continuous phase. However, the continuity equation is defined with respect to the mixture velocity requiring an additional corrective term to appear in the species transport equation. This term is based on the corrective velocity defined as
+The relative velocities $\mathbf{v}_j$ captures turbulent and molecular diffusion for the continuous phase and $\mathbf{w}_j$ captures  turbulent diffusion, dispersed diffusion, and dispersed inertial drift for the dispersed phase. The underlying models are commonly defined in terms of a relative motion with respect to the continuous 'carrier' phase. Therefore, $\mathbf{v}_j$ and $\mathbf{w}_j$ are also defined as relative velocities with respect to the continuous phase. However, the continuity equation is defined with respect to the mixture velocity requiring an additional corrective term to appear in the species transport equation. This term is based on the corrective velocity defined as
 
 $$
   \mathbf{V}_d = \sum_j (Y_j \mathbf{v}_j + Z_j \mathbf{w}_j).
@@ -71,14 +71,14 @@ with $p$ representing pressure; $\tau_m$, mixture viscous stress tensor; $\tau_m
 The mixture energy transport equation is formulated in terms of the temperature $T$. This is more convenient when specifying boundary conditions, which are usually adiabatic or isothermal. The energy transport equation is given by:
 
 $$
-  c_v[\partial_t (\rho_m T) + \nabla\cdot(\rho_m\mathbf{u}_m T)] = \nabla\cdot(\kappa_m \nabla T) + \nabla\cdot(\kappa_m^\mathrm{turb} \nabla T) - \nabla\cdot(\mathbf{u}p) - \mathrm{D}_t K + \dot{Q},
+  c_v[\partial_t (\rho_m T) + \nabla\cdot(\rho_m\mathbf{u}_m T)] = \nabla\cdot(\kappa_m \nabla T) + \nabla\cdot(\kappa_m^\mathrm{turb} \nabla T) - \nabla\cdot(\mathbf{u}p) - \mathrm{D}_t (\rho_m K) + \dot{Q},
 $$
 
-with $c_v$ representing heat capacity at constant volume; $\kappa_m$, mixture thermal conductivity; $\kappa_m^\mathrm{turb}$, mixture turbulent thermal conductivity; $K=\frac{1}{2}|\mathbf{u}|^2$, kinetic energy; $\dot{Q}$, and heat source .
+with $c_v$ representing heat capacity at constant volume; $\kappa_m$, mixture thermal conductivity; $\kappa_m^\mathrm{turb}$, mixture turbulent thermal conductivity; $\rho_m K=\frac{1}{2} \rho_m |\mathbf{u}|^2$, kinetic energy; $\dot{Q}$, and heat source .
 
 ### Population balance equation  
 
-In addition to the mass fractions $Z_j$, the dispersed phase is also described by particle size distribution $n(d)$, with diameter $d$ in m. The size distribution is defined in such a way that $n(d)\mathrm{d}d$ gives the total number of particles per unit of volume with size $[d,d+\mathrm{d}d]$. The $\gamma$th length moment of the size distribution is defined as
+In addition to the mass fractions $Z_j$, the dispersed phase is also described by particle size distribution $n(d)$, with diameter $d$ in m. The size distribution is defined in such a way that $n(d)\mathrm{d}d$ gives the total number of particles per unit of volume with size $[d,d+\mathrm{d}d]$. The $\gamma^{th}$ length moment of the size distribution is defined as
 
 $$
   \mathcal{N}_\gamma = \int_0^\infty d^\gamma n(d)\mathrm{d}d
@@ -183,34 +183,36 @@ $$
   \beta(a,b) = \tilde{K} (a+b)^2 (1/a^{3/2} + 1/b^{3/2})
 $$
 
-In these equations $Kn$ is the Knudsen number; $K$ and $\tilde{K}$ are coalescence coefficients $K=2k_B T/3\mu$ and $\tilde{K} = b3\sqrt{3}/2\sqrt{\mu^2/(\rho_\ell k_B T)}K$  with the Boltzmann's constant $k_B$,  temperature $T$,  gas viscosity $\mu$, liquid mass density $\rho_\ell$,  mean free path $\lambda$, coefficients $A=1.591$, and $b$ (see [Lee & Chen (1984)](https://doi.org/10.1080/02786828408959020)).
+In these equations $Kn$ is the Knudsen number; $K$ and $\tilde{K}$ are coalescence coefficients $K=2k_B T/3\mu$ and $\tilde{K} = b3\sqrt{3}/2 \sqrt{ \mu^2 / (\rho_\ell k_B T) } K $  with the Boltzmann's constant $k_B$,  temperature $T$,  gas viscosity $\mu$, liquid mass density $\rho_\ell$,  mean free path $\lambda$, coefficients $A=1.591$, and $b$ (see [Lee & Chen (1984)](https://doi.org/10.1080/02786828408959020)).
 
 In order to capture the transition from one regime to the other, also a harmonic mean of the gas-slip and free-molecule coalescence kernel is implemented.
 
-### Inertial drift
+### Dispersed inertial drift
 
-Inertial drift is captured inside the continuum--particle relative velocity $\mathbf{w}_j(d)$. Since particles are assumed to be internally mixed (i.e., particle composition is independent of size), all species have, given a particle size $d$, the same inertial drift velocity. This implies that $\mathbf{w}_j(d)=\mathbf{w}(d)$. There are two inertial drift models implemented in AeroSolved, which will be discussed now.
+Dispersed inertial drift is captured inside the continuum--particle relative velocity $\mathbf{w}_j(d)$. Since particles are assumed to be internally mixed (i.e., particle composition is independent of size), all species have, given a particle size $d$, the same dispersed inertial drift velocity. This implies that $\mathbf{w}_j(d)=\mathbf{w}(d)$. There are two dispersed inertial drift models implemented in AeroSolved, which will be discussed now.
 
-#### Algebraic drift model
+#### Algebraic dispersed inertial drift model
 
-`./libraries/aerosolModels/submodels/driftFluxModel/inertialModels/Manninen/`
+`./libraries/aerosolModels/submodels/dispersedInertialDriftModels/Manninen/`
 
-One can adopt the so-called 'local equilibrium assumption', see Manninen et al. (1996). In that case, the inertial drift velocity can be modeled algebraically, by
+One can adopt the so-called 'local equilibrium assumption', see Manninen et al. (1996). In that case, the dispersed inertial drift velocity can be modeled algebraically, by
 
 $$
   \mathbf{w} = \tau [(1-\gamma)\mathbf{g}-\mathrm{d}\mathbf{u}_m/\mathrm{d}t],
 $$
 
 with $\gamma=\rho_c/\rho_d$, gravitational acceleration vector $\mathbf{g}$ and Stokes particle relaxation time
+
 $$
   \tau = \frac{\rho_d d^2}{18\mu}.
 $$
+
 Note that the algebraic drift model is only valid for small particle Stokes numbers. It was shown that the algebraic model fails for large particle Stokes numbers  [Frederix (2016)](http://dx.doi.org/10.3990/1.9789036542289).
 
 
 #### Full Stokes drift model
 
-`./libraries/aerosolModels/submodels/driftFluxModel/inertialModels/fullStokes/`
+`./libraries/aerosolModels/submodels/dispersedInertialDriftModels/fullStokes/`
 
 The local equilibrium assumption allows to reduce the full PDE for the particulate velocity to an algebraic formula. If this assumption is not valid, the PDE should be solved by
 
@@ -220,11 +222,11 @@ $$
 
 This equation can be solved for $\mathbf{w}$ subject to appropriate boundary conditions.
 
-### Brownian drift
+### Dispersed diffusion drift model
 
-`./libraries/aerosolModels/submodels/driftFluxModel/BrownianModels/StokesEinstein/`
+`./libraries/aerosolModels/submodels/dispersedDiffusionModels/StokesEinstein/`
 
-The particulate phase may diffuse because of Brownian motion. This is modeled inside AeroSolved by using an additional diffusion term. The Brownian diffusivity is computed by using the Stokes-Einstein relationship, which is given by
+The particulate phase may diffuse because of Brownian motion. This is modeled inside AeroSolved by using an additional diffusion term. The dispersed diffusivity is computed by using the Stokes-Einstein relationship, which is given by
 
 $$
   D(d) = \frac{k_B T C_c}{3\pi\mu d}
@@ -239,11 +241,12 @@ with Cunningham correction factor $C_c$.
 `libraries/aerosolModels/fixedSectional/derivedFvPatchFields/sectionalSubGridDepositionVelocity/`
 
 This boundary condition uses the analytical solution to one-dimensional particle motion subject to Stokes drag to compute the particle velocity at the wall ([Frederix (2018)](https://doi.org/10.1016/j.compfluid.2017.09.018)). In scaled form, the particle equation of motion is given by
+
 $$
 \ddot{x}(t) + \dot{x}(t) + ux(t) = g
 $$
 
-The particle velocity at the wall is then given by $v = \dot{x}(t^*)$, with $t^*$ representing the impaction time at the wall of the particle. 
+The particle velocity at the wall is then given by $v = \dot{x}(t^*)$ , with $t^*$ representing the impaction time at the wall of the particle. 
 
 ## The aerosolEulerFoam solver
 
@@ -253,7 +256,7 @@ The aerosolEulerFoam solver is based on the standard reactingFoam OpenFOAM solve
 
 For each time step, do:
 
-* Correct the aerosol model by using `aerosol->correct()`. This aerosolModel member function has the task of updating all aerosol-related coefficients and fields. These are: the molecular diffusivities; inertial drift velocity; Brownian diffusivity; corrective drift velocity $\mathbf{V}_d$; nucleation source term; condensation source term; and coalescence source term. The twoMomentLogNormalAnalytical and fixedSectional models solve the 'right-hand side' contributions of the $Y_j$ and $Z_j$ equations as captured by $\Gamma_j$ themselves. Therefore, these two aerosol models do not produce a nucleation, condensation, or coalescence source term. The 'twoMomentLogNormal' model, on the other hand, does:
+* Correct the aerosol model by using `aerosol->correct()`. This aerosolModel member function has the task of updating all aerosol-related coefficients and fields. These are: the molecular diffusivities; dispersed inertial drift velocity; dispersed diffusivity; corrective drift velocity $\mathbf{V}_d$; nucleation source term; condensation source term; and coalescence source term. The twoMomentLogNormalAnalytical and fixedSectional models solve the 'right-hand side' contributions of the $Y_j$ and $Z_j$ equations as captured by $\Gamma_j$ themselves. Therefore, these two aerosol models do not produce a nucleation, condensation, or coalescence source term. The 'twoMomentLogNormal' model, on the other hand, does:
 
 * Solve the continuity equation. Standard reactingFoam
 

@@ -60,14 +60,10 @@ Foam::aerosolModels::twoMomentLogNormalAnalytical::
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-void Foam::aerosolModels::twoMomentLogNormalAnalytical::correctModel()
+void Foam::aerosolModels::twoMomentLogNormalAnalytical::correct()
 {
-    twoMomentLogNormal::updateDrift();
-}
-
-void Foam::aerosolModels::twoMomentLogNormalAnalytical::solvePre()
-{
-    twoMomentLogNormal::solvePre();
+    // Prevent call to the twoMomentLogNormal correct() function. Sources are
+    // corrected in the solvePost step directly
 }
 
 void Foam::aerosolModels::twoMomentLogNormalAnalytical::solvePost()
@@ -105,7 +101,10 @@ void Foam::aerosolModels::twoMomentLogNormalAnalytical::solvePost()
     PtrList<volScalarField>& Z = thermo_.Z();
 
     PtrList<scalarField> pSat(thermo_.pSat(activeSpecies));
+    PtrList<scalarField> gamma(thermo_.activity().gamma(activeSpecies));
     PtrList<scalarField> D(thermo_.diffusivity().Deff());
+    PtrList<scalarField> sigma(thermo_.sigma(activeSpecies));
+    PtrList<scalarField> rhoDisp(thermo_.rhoDisp(activeSpecies));
 
     const scalarField CMD(this->medianDiameter(0));
     const scalarField rhol(thermo_.thermoDisp().rho());
@@ -114,9 +113,6 @@ void Foam::aerosolModels::twoMomentLogNormalAnalytical::solvePost()
 
     if (nucleation_->modelType() != "none")
     {
-        PtrList<scalarField> rhoDisp(thermo_.rhoDisp(activeSpecies));
-        PtrList<scalarField> sigma(thermo_.sigma(activeSpecies));
-
         forAll(M, celli)
         {
             const nucData ndata
@@ -127,6 +123,7 @@ void Foam::aerosolModels::twoMomentLogNormalAnalytical::solvePost()
                     T[celli],
                     entryList(Y,celli),
                     entryList(pSat,celli),
+                    entryList(gamma,celli),
                     entryList(D,celli),
                     entryList(rhoDisp,celli),
                     entryList(sigma,celli)
@@ -167,13 +164,17 @@ void Foam::aerosolModels::twoMomentLogNormalAnalytical::solvePost()
             (
                 condensation_->rate
                 (
+                    dcm[celli],
                     p[celli],
                     T[celli],
                     entryList(Y,celli),
                     entryList(Z,celli),
                     entryList(pSat,celli),
+                    entryList(gamma,celli),
                     entryList(D,celli),
-                    entryList(rhoCont,celli)
+                    entryList(rhoCont,celli),
+                    entryList(rhoDisp,celli),
+                    entryList(sigma,celli)
                 )
             );
 
@@ -329,13 +330,6 @@ Foam::aerosolModels::twoMomentLogNormalAnalytical::R
     );
 
     return fvm::Su(I, Y);
-}
-
-
-Foam::tmp<Foam::volScalarField>
-Foam::aerosolModels::twoMomentLogNormalAnalytical::Qdot() const
-{
-    return twoMomentLogNormal::Qdot();
 }
 
 

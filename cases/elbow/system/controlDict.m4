@@ -15,19 +15,19 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         2;
+endTime         0.2;
 
 deltaT          1e-6;
 
 writeControl    adjustableRunTime;
 
-writeInterval   0.1;
+writeInterval   0.01;
 
 purgeWrite      0;
 
 writeFormat     ascii;
 
-writePrecision  20;
+writePrecision  8;
 
 writeCompression off;
 
@@ -47,11 +47,28 @@ libs            ("libcustomFunctions.so");
 
 functions
 {
+    dispersedMask
+    {
+        type            dispersedMask;
+        libs            ("libaerosolModels.so");
+        threshold       1e-10;
+        writeControl    writeTime;
+    }
+
     dcm
     {
         type            countMeanDiameter;
         libs            ("libaerosolModels.so");
         writeControl    writeTime;
+    }
+
+    CMD
+    {
+        type            medianDiameter;
+        p               0.0
+        libs            ("libaerosolModels.so");
+        writeControl    writeTime;
+        result          CMD;
     }
 
     dropletFlux
@@ -68,5 +85,57 @@ functions
         libs            ("libaerosolModels.so");
         patches         (inlet outlet walls);
         writeControl    writeTime;
+    }
+
+    volAverageDiameters
+    {
+        type            volFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeFields     no;
+        regionType      all;
+
+        operation       weightedVolAverage;
+        weightField     dispersedMask;
+
+        fields
+        (
+            dcm
+            CMD
+        );
+    }
+
+    accumulateFlux
+    {
+        type            accumulateFlux;
+        libs            ("libaerosolModels.so");
+        field           phiEff.Water.dispersed;
+        result          Water.dispersed.accumulated;
+        writeControl    writeTime;
+    }
+
+    phiEff_PG.continuous
+    {
+        type            boundaryFluxDensity;
+        libs            ("libaerosolModels.so");
+
+        phi             phiEff.Water.dispersed;
+        result          fluxDensity.Water.dispersed;
+
+        executeControl  writeTime;
+        writeControl    writeTime;
+    }
+
+    accumulation
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        writeFields     no;
+
+        regionType      patch;
+        name            walls;
+
+        operation       areaIntegrate;
+
+        fields          (Water.dispersed.accumulated);
     }
 }

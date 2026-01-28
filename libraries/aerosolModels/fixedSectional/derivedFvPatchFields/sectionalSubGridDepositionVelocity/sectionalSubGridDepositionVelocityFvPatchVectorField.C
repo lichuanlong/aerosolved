@@ -32,34 +32,7 @@ Foam::label
 Foam::sectionalSubGridDepositionVelocityFvPatchVectorField::sectionIndex()
 const
 {
-    const fixedSectionalSystem& system =
-        db().lookupObject<fixedSectionalSystem>("fixedSectionalSystem");
-
-    const word sectionNum
-    (
-        this->internalField().group()
-    );
-
-    forAll(system.distribution(), i)
-    {
-        const word sectioNumi
-        (
-            system.distribution()[i].M().group()
-        );
-
-        if (sectionNum == sectioNumi)
-        {
-            return i;
-        }
-    }
-
-    FatalErrorInFunction
-        << "The section to which this BC's field ("
-        << this->internalField().name()
-        << ") belongs could not be found"
-        << exit(FatalError);
-
-    return -1;
+    return readLabel(IStringStream(internalField().group())()) - 1;
 }
 
 
@@ -72,10 +45,7 @@ sectionalSubGridDepositionVelocityFvPatchVectorField
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    zeroGradientFvPatchVectorField(p, iF),
-    g_(vector::zero),
-    maxIter_(99),
-    tolerance_(1e-8)
+    subGridDepositionVelocityFvPatchVectorField(p, iF)
 {}
 
 
@@ -88,10 +58,7 @@ sectionalSubGridDepositionVelocityFvPatchVectorField
     const fvPatchFieldMapper& mapper
 )
 :
-    zeroGradientFvPatchVectorField(ptf, p, iF, mapper),
-    g_(ptf.g_),
-    maxIter_(ptf.maxIter_),
-    tolerance_(ptf.tolerance_)
+    subGridDepositionVelocityFvPatchVectorField(ptf, p, iF, mapper)
 {}
 
 
@@ -103,28 +70,8 @@ sectionalSubGridDepositionVelocityFvPatchVectorField
     const dictionary& dict
 )
 :
-    zeroGradientFvPatchVectorField(p, iF),
-    g_
-    (
-        uniformDimensionedVectorField
-        (
-            IOobject
-            (
-                "g",
-                patch().boundaryMesh().mesh().time().constant(),
-                patch().boundaryMesh().mesh(),
-                IOobject::READ_IF_PRESENT,
-                IOobject::NO_WRITE
-            ),
-            dimensionedVector("g", dimVelocity/dimTime, vector::zero)
-        ).value()
-    ),
-    maxIter_(dict.lookupOrDefault<label>("maxIter", 99)),
-    tolerance_(dict.lookupOrDefault<scalar>("tolerance", 1e-8))
-{
-    fvPatchVectorField::operator=(patchInternalField());
-}
-
+    subGridDepositionVelocityFvPatchVectorField(p, iF, dict)
+{}
 
 Foam::sectionalSubGridDepositionVelocityFvPatchVectorField::
 sectionalSubGridDepositionVelocityFvPatchVectorField
@@ -133,107 +80,42 @@ sectionalSubGridDepositionVelocityFvPatchVectorField
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    zeroGradientFvPatchVectorField(fcvpvf, iF),
-    g_(fcvpvf.g_),
-    maxIter_(fcvpvf.maxIter_),
-    tolerance_(fcvpvf.tolerance_)
+    subGridDepositionVelocityFvPatchVectorField(fcvpvf, iF)
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::sectionalSubGridDepositionVelocityFvPatchVectorField::evaluate
-(
-    const Pstream::commsTypes
-)
+Foam::tmp<Foam::scalarField>
+Foam::sectionalSubGridDepositionVelocityFvPatchVectorField::d() const
 {
-    if (!updated())
-    {
-        updateCoeffs();
-    }
-
-    zeroGradientFvPatchVectorField::evaluate();
-
     const fixedSectionalSystem& system =
         db().lookupObject<fixedSectionalSystem>("fixedSectionalSystem");
 
     const aerosolModel& aerosol = system.aerosol();
-
-    const section& sec = system.distribution()[sectionIndex()];
-
-    const vectorField Up
-    (
-        aerosol.U().boundaryField()[patch().index()].patchInternalField()
-    );
-
     const aerosolThermo& thermo = aerosol.thermo();
 
-    const scalarField rhoc(thermo.thermoCont().rho(patch().index()));
     const scalarField rhod(thermo.thermoDisp().rho(patch().index()));
 
-    const scalarField gamma(rhoc/rhod);
+    const section& sec = system.distribution()[this->sectionIndex()];
 
-    const scalarField mu(thermo.thermoCont().mu(patch().index()));
-
-    const scalarField d(sec.d(rhod));
-
-    const scalarField tau(rhod*sqr(d)/(18.0*mu));
-
-    const scalarField delta(mag(patch().delta()));
-    const vectorField n(patch().nf());
-
-    const scalarField v0(-((patchInternalField() + Up) & n) * tau/delta);
-
-    const scalarField g(-(g_ & n) * (1.0-gamma)*sqr(tau)/delta);
-
-    const scalarField u(-(Up & n) * tau/delta);
-
-    scalarField v(patch().size(), 0.0);
-
-    forAll(*this, facei)
-    {
-        if (v0[facei] < tolerance_)
-        {
-            if (delta[facei] > d[facei]/2.0)
-            {
-                const subGridDepositionModel model
-                (
-                    u[facei],
-                    g[facei],
-                    v0[facei],
-                    d[facei]/2.0,
-                    maxIter_,
-                    tolerance_
-                );
-
-                if (model.collision())
-                {
-                    const scalar t(model.t());
-                    v[facei] = model.v(t);
-                }
-            }
-            else
-            {
-                v[facei] = v0[facei];
-            }
-        }
-    }
-
-    operator==(-v*delta/tau*n);
+    return sec.d(rhod);
 }
 
+void Foam::sectionalSubGridDepositionVelocityFvPatchVectorField::evaluate
+(
+    const Pstream::commsTypes commsType
+)
+{
+    subGridDepositionVelocityFvPatchVectorField::evaluate(commsType);
+}
 
 void Foam::sectionalSubGridDepositionVelocityFvPatchVectorField::write
 (
     Ostream& os
 ) const
 {
-    fvPatchVectorField::write(os);
-
-    os.writeEntryIfDifferent<label>("maxIter", 99, maxIter_);
-    os.writeEntryIfDifferent<scalar>("tolerance", 1e-8, tolerance_);
-
-    writeEntry("value", os);
+    subGridDepositionVelocityFvPatchVectorField::write(os);
 }
 
 

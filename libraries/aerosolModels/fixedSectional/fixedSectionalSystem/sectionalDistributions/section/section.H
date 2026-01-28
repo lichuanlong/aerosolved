@@ -72,9 +72,6 @@ protected:
         //- Sectional inertial drift flux field [kg/s]
         surfaceScalarField phiInertial_;
 
-        //- Sectional Brownian drift flux field [kg/s]
-        surfaceScalarField phiBrownian_;
-
         //- Sectional diffusivity field [m^2/s]
         volScalarField D_;
 
@@ -196,17 +193,6 @@ public:
                 return phiInertial_;
             }
 
-            //- Return the sectional inertial drift flux field
-            inline surfaceScalarField& phiBrownian()
-            {
-                return phiBrownian_;
-            }
-
-            inline const surfaceScalarField& phiBrownian() const
-            {
-                return phiBrownian_;
-            }
-
             //- Return the sectional diffusivity field
             inline volScalarField& D()
             {
@@ -219,7 +205,7 @@ public:
             }
 
             //- Compute the droplet diameter given a dispersed phase density
-            inline scalar d(const scalar rho) const
+            inline scalar d(const scalar& rho) const
             {
                 return
                     Foam::pow(x_/rho*6.0/constant::mathematical::pi, 1.0/3.0);
@@ -227,15 +213,10 @@ public:
 
             //- Compute the droplet diameter given a dispersed phase mass
             //  density field
-            inline scalarField d(const scalarField& rho) const
+            inline tmp<scalarField> d(const scalarField& rho) const
             {
-                scalarField result(x_/rho*6.0/constant::mathematical::pi);
-
-                for (scalar& val : result)
-                {
-                    val = Foam::pow(val, 1.0/3.0);
-                }
-                return result;
+                return
+                    Foam::pow(x_/rho*6.0/constant::mathematical::pi, 1.0/3.0);
             }
 
             //- is M_ valid?

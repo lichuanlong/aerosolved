@@ -19,18 +19,32 @@ License
 
 if (adjustTimeStep)
 {
-    scalar maxConvDeltaTFact = maxCo/(CoNum + SMALL);
-    scalar maxAerosolDeltaTFact = maxAerosolCo/(aerosolCoNum + SMALL);
-    scalar maxDriftDeltaTFact = maxDriftCo/(driftCoNum + SMALL);
+    // By default, take maxCo as the max CFL number for the aerosol source term,
+    // drift and corrective drift. Can be overwritten by specifying
+    // maxAerosolCo, maxDriftCo and maxCorrCo in the controlDict
 
-    scalar maxDeltaTFact
-    (
-        min
-        (
-            min(maxConvDeltaTFact, maxAerosolDeltaTFact),
-            maxDriftDeltaTFact
-        )
-    );
+    const scalar maxAerosolCo =
+        runTime.controlDict().lookupOrDefault<scalar>("maxAerosolCo", maxCo);
+
+    const scalar maxDriftCo =
+        runTime.controlDict().lookupOrDefault<scalar>("maxDriftCo", maxCo);
+
+    const scalar maxCorrCo =
+        runTime.controlDict().lookupOrDefault<scalar>("maxCorrCo", maxCo);
+
+    const scalar maxConvDeltaTFact = maxCo/(CoNum + SMALL);
+    const scalar maxAerosolDeltaTFact = maxAerosolCo/(aerosolCoNum + SMALL);
+    const scalar maxDriftDeltaTFact = maxDriftCo/(driftCoNum + SMALL);
+    const scalar maxCorrDeltaTFact = maxCorrCo/(corrCoNum + SMALL);
+
+    scalar maxDeltaTFact = 1e99;
+
+    // Take the maxDeltaTFact as the minimum of all constraints
+
+    maxDeltaTFact = min(maxDeltaTFact,maxConvDeltaTFact);
+    maxDeltaTFact = min(maxDeltaTFact,maxAerosolDeltaTFact);
+    maxDeltaTFact = min(maxDeltaTFact,maxDriftDeltaTFact);
+    maxDeltaTFact = min(maxDeltaTFact,maxCorrDeltaTFact);
 
     scalar deltaTFact = min(min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
 

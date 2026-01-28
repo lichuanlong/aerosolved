@@ -26,7 +26,6 @@ License
 int main(int argc, char *argv[])
 {
     argList::noParallel();
-    argList::noFunctionObjects();
 
     timeSelector::addOptions();
 

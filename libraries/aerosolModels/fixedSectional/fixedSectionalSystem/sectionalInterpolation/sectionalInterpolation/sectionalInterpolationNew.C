@@ -38,8 +38,7 @@ autoPtr<sectionalInterpolation> sectionalInterpolation::New
     Info<< "    Selecting sectional interpolation method "
         << modelType << endl;
 
-    dictionaryConstructorTable::iterator cstrIter =
-        dictionaryConstructorTablePtr_->find(modelType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(modelType);
 
     if (cstrIter == dictionaryConstructorTablePtr_->end())
     {

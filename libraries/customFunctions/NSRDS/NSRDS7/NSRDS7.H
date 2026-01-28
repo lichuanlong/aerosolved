@@ -64,17 +64,20 @@ public:
         NSRDS7
         (
             const word& entryName,
-            const dictionary& dict
+            const dictionary& dict,
+            const objectRegistry* obrPtr = nullptr
         );
 
         //- Copy constructor
         NSRDS7(const NSRDS7<Type>& se);
 
+#ifndef AEROSOLVED_NO_CLONE_IN_FUNCTION1
         //- Construct and return a clone
         virtual tmp<Function1<Type>> clone() const
         {
             return tmp<Function1<Type>>(new NSRDS7<Type>(*this));
         }
+#endif
 
 
     //- Destructor

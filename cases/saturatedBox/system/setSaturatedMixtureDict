@@ -1,0 +1,22 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      setSaturatedMixtureDict;
+}
+
+S   0.5;
+
+f
+{
+    Water1  0.0;
+    Water2  0.0;
+    Water3  1.0;
+}
+
+g
+{
+    Air     1.0;
+}

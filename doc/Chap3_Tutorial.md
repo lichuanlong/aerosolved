@@ -72,7 +72,7 @@ A bash script (`Allrun`) is included in the bentPipe case which sets all the geo
     NR=10           # Number of cells over one radius
     DRWALL=1E-4     # Radial cell size at the wall [m]
 
-The execution of the bash script requires two parameters as user input – the selections of the inertial drift model and the aerosol model. AeroSolved incorporates two inertial models to model drift velocities:
+The execution of the bash script requires two parameters as user input – the selections of the dispersed inertial drift model and the aerosol model. AeroSolved incorporates two dispersed inertial drift models to model drift velocities:
 
 * fullStokes, for the complete Stokes model, and
 * Manninen, for the reduced Stokes model (Manninen et al., 1996).
@@ -82,7 +82,7 @@ The aerosol model is selected by:
 * moment, for the two-moment log-normal method, and
 * sectional, for the sectional method.
 
-For further details regarding these models, see [Model](Chap2_Model.md). In the present tutorial case, fullStokes is selected as the inertial model, while sectional is chosen as the aerosol model. By providing these parameters, the script is executed as below.
+For further details regarding these models, see [Model](Chap2_Model.md). In the present tutorial case, fullStokes is selected as the dispersed inertial drift model, while sectional is chosen as the aerosol model. By providing these parameters, the script is executed as below.
 
     ./Allrun fullStokes sectional
 
@@ -140,17 +140,17 @@ The thermophysical properties of the continuous phase are set as $\mu_c$ = 10<su
          
         driftFluxModel
         {
-            diffusion
+            continuousDiffusion
             {
                 type        none;
             }
          
-            Brownian
+            dispersedDiffusion
             {
                 type        StokesEinstein;
             }
          
-            inertial
+            dispersedInertialDrift
             {
                 type        fullStokes;
                 tolerance   1E-6;
@@ -161,7 +161,7 @@ The thermophysical properties of the continuous phase are set as $\mu_c$ = 10<su
     }
 
 The aerosol model parameters are defined here. The aerosol model is set to sectional method by using the keyword `fixedSectional`. Here, the size sections are defined by a list defined in `fixedSectionalCoeffs`.
-Condensation, nucleation and coalescence of the particles are turned off. The drift velocity is modelled in two parts: by Brownian motion defined by the Stokes-Einstein model (`StokesEinstein`) and inertial drift defined by the complete Stokes model (`fullStokes`).
+Condensation, nucleation and coalescence of the particles are turned off. The drift velocity is modelled in two parts: by dispersed diffusion defined by the Stokes-Einstein model (`StokesEinstein`) and dispersed inertial drift defined by the complete Stokes model (`fullStokes`).
 
 `0/M`
 

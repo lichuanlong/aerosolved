@@ -27,7 +27,7 @@ tmp<fvVectorMatrix> tUEqn
   + MRF.DDt(rho, U)
   + turbulence->divDevRhoReff(U)
  ==
-    fvc::div(aerosol->tauDrift())
+    fvc::div(tauDrift)
   + fvOptions(rho, U)
 );
 

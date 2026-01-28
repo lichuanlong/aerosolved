@@ -219,6 +219,9 @@ public:
             const label& cellI,
             const scalar& p
         ) const;
+
+        //- Function to correct the distribution field's boundary conditions
+        void correctBoundaryConditions();
 };
 
 

@@ -20,12 +20,24 @@ License
 /**
 
 \file saturatedMixtureFvPatchScalarField.H
+
 \brief Saturated mixture BC
 
-This BC can be used to specify a perfectly saturated mixture at a patch.
-Alternatively, by specifying saturation ratios for each species, the mixture can
-be made non-saturated. The composition of the inert gas should be configured
-using the 'inertMoleFrac' entry.
+This BC can be used to specify a saturated mixture at a patch. We have a set A
+of active species having this BC, a set I of inactive species having this BC and
+a set O of other species having another BC. The saturation is computed using a
+hypothetical pool of liquid, of which the composition determines the continuous
+mass fractions of species in A and I. The pool composition for O-species follows
+from the evaluation of their respective BCs and Raoult's law. The pool
+composition for A-species follows then from the remainder, where the composition
+of A-species mixture in the pool liquid is set using the f parameter in the BC.
+If there is only one specie in A, then f defaults to unity. From the pool
+composition, the vapor mass fractions can be computed using Raoult's law. The
+user can specify a total saturation S to have an over- or under-saturated
+mixture. S defaults to unity. If there are more than one species in I, the user
+should specify the composition of I-species in the continuous mixture of
+I-species, using the g parameter. If there is only one specie in I, g defaults
+to unity.
 
 */
 
@@ -53,14 +65,39 @@ class saturatedMixtureFvPatchScalarField
 
     // Private Data
 
+        //- Total saturation fraction
+        scalar S_;
+
+        //- Iterative solution tolerance, defaults to 1e-8
+        scalar tolerance_;
+
         //- Switch if fields are checked
         Switch checkFields_;
 
-        //- List of saturation fractions (default to 1)
-        HashTable<scalar> S_;
+        //- Alternative saturation temperature (defaults to -1, meaning that the
+        //  patch temperature will be taken)
+        scalar T_;
 
-        //- List of inert mole fractions
+        //- List of pool phase active specie mixture mole fractions read
+        //  from the f field in the BC dict. It defaults to unity if there is
+        //  only one 'type 0' specie
         HashTable<scalar> f_;
+
+        //- List of continuous phase inactive specie mixture mole fractions read
+        //  from the g field in the BC dict. It defaults to unity if there is
+        //  only one 'type 1' specie
+        HashTable<scalar> g_;
+
+        //- List indicating the role each species plays:
+        //  0 -> active species having the saturatedMixture BC
+        //  1 -> inactive species having the saturatedMixture BC
+        //  2 -> other specie not having the saturatedMixture BC
+        List<label> specieType_;
+
+        //- Number of species per type
+        label N0_;
+        label N1_;
+        label N2_;
 
 
     // Private Member Functions

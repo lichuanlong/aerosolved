@@ -66,6 +66,8 @@ public:
             sumY,
             sumZ,
             lambda,
+            rhoCont,
+            rhoDisp
         };
 
         //- Thermo field type names
